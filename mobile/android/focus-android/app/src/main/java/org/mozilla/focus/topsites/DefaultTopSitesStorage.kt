@@ -56,6 +56,14 @@ class DefaultTopSitesStorage(
         }
     }
 
+    override fun reorderTopSites(topSites: List<TopSite>) {
+        scope.launch {
+            pinnedSitesStorage.reorderPinnedSites(topSites)
+
+            notifyObservers { onStorageUpdated() }
+        }
+    }
+
     override suspend fun getTopSites(
         totalSites: Int,
         frecencyConfig: TopSitesFrecencyConfig?,
