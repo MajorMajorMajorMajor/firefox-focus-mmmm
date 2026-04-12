@@ -90,6 +90,15 @@ jobs:
           MOZCONFIG: .mozconfig-ci
         run: ./mach configure
 
+      - name: Create buildid.h for Gradle metadata
+        run: |
+          TOPOBJDIR=$(find . -maxdepth 1 -name 'obj-*' -type d 2>/dev/null | head -1)
+          if [ -z "$TOPOBJDIR" ]; then
+            TOPOBJDIR="obj-arm-unknown-linux-androideabi"
+          fi
+          mkdir -p "$TOPOBJDIR"
+          printf '#define MOZ_BUILDID %s\n' "$MOZ_BUILD_DATE" > "$TOPOBJDIR/buildid.h"
+
       - name: Build Focus debug APK
         env:
           MOZ_AUTOMATION: "1"
