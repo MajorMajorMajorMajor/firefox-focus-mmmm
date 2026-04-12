@@ -74,6 +74,8 @@ jobs:
           ac_add_options --with-gradle
           ac_add_options --without-mozilla-api-keyfile
           ac_add_options --without-google-safebrowsing-api-keyfile
+          ac_add_options --without-embedded-uniffi-bindgen
+          ac_add_options --without-nimbus-fml
           ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
           export MOZILLA_OFFICIAL=1
           EOF
