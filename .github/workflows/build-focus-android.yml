@@ -29,6 +29,13 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Link JDK into Mozilla expected path
+        run: |
+          JAVA_RUNTIME_VERSION=$(java -XshowSettings:properties -version 2>&1 | sed -n 's/.*java.runtime.version = //p' | head -n1)
+          JAVA_RUNTIME_VERSION=${JAVA_RUNTIME_VERSION%%-*}
+          mkdir -p "$HOME/.mozbuild/jdk"
+          ln -sfn "$JAVA_HOME" "$HOME/.mozbuild/jdk/jdk-$JAVA_RUNTIME_VERSION"
+
       - name: Install Android emulator component
         run: |
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
