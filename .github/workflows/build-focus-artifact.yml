@@ -1,0 +1,92 @@
+name: Build Firefox Focus (artifact mode)
+
+# Experiment: the fork is a full mozilla-central mirror (only the local
+# Termux checkout is sparse). In CI, actions/checkout hydrates the full
+# tree, so we can run the supported ./mach build --artifact path with no
+# overlay dance. If this works, the hand-stubbed pipeline on main can be
+# replaced by this.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/artifact-build
+    paths:
+      - "mobile/android/focus-android/**"
+      - ".github/workflows/build-focus-artifact.yml"
+
+jobs:
+  build-focus-artifact:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sanity-check full tree is present
+        run: |
+          echo "Top-level entries:"
+          ls -1 | head -40
+          test -d toolkit && test -d build && test -d python
+          echo "OK: toolkit/, build/, python/ all present."
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Link JDK into Mozilla expected path
+        run: |
+          JAVA_RUNTIME_VERSION=$(java -XshowSettings:properties -version 2>&1 | sed -n 's/.*java.runtime.version = //p' | head -n1)
+          JAVA_RUNTIME_VERSION=${JAVA_RUNTIME_VERSION%%-*}
+          mkdir -p "$HOME/.mozbuild/jdk"
+          ln -sfn "$JAVA_HOME" "$HOME/.mozbuild/jdk/jdk-$JAVA_RUNTIME_VERSION"
+
+      - name: Write artifact-mode mozconfig
+        run: |
+          cat > .mozconfig <<'EOF'
+          ac_add_options --enable-project=mobile/android/focus-android
+          ac_add_options --enable-artifact-builds
+          ac_add_options --target=arm-linux-androideabi
+          mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-arm-focus
+          EOF
+          cat .mozconfig
+
+      - name: mach configure
+        env:
+          MOZ_AUTOMATION: "1"
+        run: ./mach configure
+
+      - name: mach build
+        env:
+          MOZ_AUTOMATION: "1"
+        run: ./mach build
+
+      - name: mach package
+        if: always()
+        env:
+          MOZ_AUTOMATION: "1"
+        run: ./mach package || true
+
+      - name: Locate APK
+        if: always()
+        run: |
+          echo "--- APKs under objdir ---"
+          find obj-* -name '*.apk' 2>/dev/null || true
+          echo "--- APKs in source tree ---"
+          find mobile/android/focus-android -name '*.apk' 2>/dev/null || true
+
+      - name: Upload APK artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: focus-artifact-apk
+          path: |
+            obj-*/gradle/build/mobile/android/focus-android/app/outputs/apk/**/*.apk
+            mobile/android/focus-android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
