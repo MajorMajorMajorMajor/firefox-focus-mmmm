@@ -65,11 +65,17 @@ jobs:
       - name: Create CI mozconfig
         run: |
           cat > .mozconfig-ci <<'EOF'
-          . "$topsrcdir/mobile/android/config/mozconfigs/android-arm/nightly"
-          . "$topsrcdir/build/mozconfig.no-compile"
+          . "$topsrcdir/build/mozconfig.common"
+          ac_add_options --enable-project=mobile/android
+          ac_add_options --target=arm-linux-androideabi
+          ac_add_options --with-branding=mobile/android/branding/nightly
+          ac_add_options --disable-compile-environment
           ac_add_options --disable-tests
           ac_add_options --with-gradle
+          ac_add_options --without-mozilla-api-keyfile
+          ac_add_options --without-google-safebrowsing-api-keyfile
           ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
+          export MOZILLA_OFFICIAL=1
           EOF
 
       - name: Configure Mozilla build environment
