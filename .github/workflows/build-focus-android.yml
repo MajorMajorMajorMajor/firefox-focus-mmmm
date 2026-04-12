@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - feature/**
     paths:
       - "mobile/android/focus-android/**"
       - ".github/workflows/build-focus-android.yml"
@@ -30,16 +29,23 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Create CI mozconfig
+        run: |
+          cat > .mozconfig-ci <<'EOF'
+          . "$topsrcdir/mobile/android/config/mozconfigs/android-arm-gradle-dependencies/nightly"
+          ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
+          EOF
+
       - name: Configure Mozilla build environment
         env:
           MOZ_AUTOMATION: "1"
-          MOZCONFIG: mobile/android/config/mozconfigs/android-arm-gradle-dependencies/nightly
+          MOZCONFIG: .mozconfig-ci
         run: ./mach configure
 
       - name: Build Focus debug APK
         env:
           MOZ_AUTOMATION: "1"
-          MOZCONFIG: mobile/android/config/mozconfigs/android-arm-gradle-dependencies/nightly
+          MOZCONFIG: .mozconfig-ci
         working-directory: mobile/android/focus-android
         run: ./gradlew --no-daemon app:assembleFocusDebug
 
