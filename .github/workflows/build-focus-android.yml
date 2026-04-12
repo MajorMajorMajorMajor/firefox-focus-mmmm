@@ -81,29 +81,27 @@ jobs:
           export MOZ_ANDROID_FAT_AAR_ARCHITECTURES=armeabi-v7a
           EOF
 
-      - name: Set MOZ_BUILD_DATE for Gradle build metadata
-        run: echo "MOZ_BUILD_DATE=$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
+      - name: Set MOZ_BUILD_DATE from latest published geckoview
+        run: |
+          LATEST=$(curl -fsSL "https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview-nightly-omni/maven-metadata.xml" \
+            | python3 -c "import sys,re; m=re.search(r'<latest>(.*?)</latest>', sys.stdin.read()); print(m.group(1))")
+          GECKO_BUILD_DATE=$(echo "$LATEST" | cut -d. -f3)
+          echo "Resolved geckoview: $LATEST (MOZ_BUILD_DATE=$GECKO_BUILD_DATE)"
+          echo "MOZ_BUILD_DATE=$GECKO_BUILD_DATE" >> "$GITHUB_ENV"
 
       - name: Configure Mozilla build environment
         env:
           MOZ_AUTOMATION: "1"
-          MOZCONFIG: .mozconfig-ci
+          MOZCONFIG: ${{ github.workspace }}/.mozconfig-ci
         run: ./mach configure
-
-      - name: Create buildid.h for Gradle metadata
-        run: |
-          TOPOBJDIR=$(find . -maxdepth 1 -name 'obj-*' -type d 2>/dev/null | head -1)
-          if [ -z "$TOPOBJDIR" ]; then
-            TOPOBJDIR="obj-arm-unknown-linux-androideabi"
-          fi
-          mkdir -p "$TOPOBJDIR"
-          printf '#define MOZ_BUILDID %s\n' "$MOZ_BUILD_DATE" > "$TOPOBJDIR/buildid.h"
 
       - name: Build Focus debug APK
         env:
           MOZ_AUTOMATION: "1"
-          MOZCONFIG: .mozconfig-ci
-        run: ./gradlew --no-daemon :focus-android:assembleFocusDebug
+          MOZCONFIG: ${{ github.workspace }}/.mozconfig-ci
+        run: |
+          cd mobile/android/focus-android
+          ./gradlew --no-daemon app:assembleFocusDebug
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
