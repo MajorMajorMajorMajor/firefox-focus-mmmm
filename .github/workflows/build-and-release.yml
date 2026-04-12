@@ -156,6 +156,18 @@ jobs:
           }
           JEOF
 
+      - name: Restore persistent debug keystore
+        env:
+          ANDROID_DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ -n "$ANDROID_DEBUG_KEYSTORE" ]; then
+            echo "$ANDROID_DEBUG_KEYSTORE" | base64 -d > "$HOME/.android/debug.keystore"
+            echo "Restored persistent debug keystore."
+          else
+            echo "WARNING: ANDROID_DEBUG_KEYSTORE secret not set — upgrades via Obtainium will fail."
+          fi
+
       - name: Build Focus debug APK
         env:
           MOZ_AUTOMATION: "1"
