@@ -57,6 +57,7 @@ fun TopSites(
     onTopSiteClicked: (TopSite) -> Unit,
     onRemoveTopSiteClicked: (TopSite) -> Unit,
     onRenameTopSiteClicked: (TopSite) -> Unit,
+    onReorderTopSites: (List<TopSite>) -> Unit,
 ) {
     val orderedSites = remember { mutableStateListOf(*topSites.toTypedArray()) }
 
@@ -123,6 +124,7 @@ fun TopSites(
                     },
                     onDragEnd = {
                         if (!hasDragged) menuExpandedFor = hitIndex
+                        else onReorderTopSites(orderedSites.toList())
                         draggingIndex = null
                         dragOffset = Offset.Zero
                         hasDragged = false
