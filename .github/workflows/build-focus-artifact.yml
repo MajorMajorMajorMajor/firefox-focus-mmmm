@@ -49,11 +49,12 @@ jobs:
 
       - name: Write artifact-mode mozconfig
         run: |
-          cat > .mozconfig <<'EOF'
+          cat > .mozconfig <<EOF
           ac_add_options --enable-project=mobile/android
           ac_add_options --enable-artifact-builds
           ac_add_options --target=arm-linux-androideabi
           ac_add_options --with-branding=mobile/android/branding/nightly
+          ac_add_options --with-android-sdk="$ANDROID_SDK_ROOT"
           mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-arm-focus
           EOF
           cat .mozconfig
