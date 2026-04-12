@@ -65,7 +65,10 @@ jobs:
       - name: Create CI mozconfig
         run: |
           cat > .mozconfig-ci <<'EOF'
-          . "$topsrcdir/mobile/android/config/mozconfigs/android-arm-gradle-dependencies/nightly"
+          . "$topsrcdir/mobile/android/config/mozconfigs/android-arm/nightly"
+          . "$topsrcdir/build/mozconfig.no-compile"
+          ac_add_options --disable-tests
+          ac_add_options --with-gradle
           ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
           EOF
 
