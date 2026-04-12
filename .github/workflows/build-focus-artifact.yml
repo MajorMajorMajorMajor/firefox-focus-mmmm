@@ -40,6 +40,24 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Install bundletool
+        run: |
+          mkdir -p "$HOME/.mozbuild"
+          BUNDLETOOL_URL=$(python3 - <<'PY'
+          import json, urllib.request
+          with urllib.request.urlopen("https://api.github.com/repos/google/bundletool/releases/latest") as r:
+              release = json.load(r)
+          for asset in release.get("assets", []):
+              name = asset.get("name", "")
+              if name.startswith("bundletool-all-") and name.endswith(".jar"):
+                  print(asset["browser_download_url"])
+                  break
+          else:
+              raise SystemExit("No bundletool-all jar found")
+          PY
+          )
+          curl -fsSL -o "$HOME/.mozbuild/bundletool.jar" "$BUNDLETOOL_URL"
+
       - name: Install Android emulator component
         run: |
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
