@@ -72,7 +72,7 @@ jobs:
           cat > .mozconfig <<'EOF'
           . "$topsrcdir/build/mozconfig.common"
           ac_add_options --enable-project=mobile/android
-          ac_add_options --target=arm-linux-androideabi
+          ac_add_options --target=aarch64-linux-android
           ac_add_options --with-branding=mobile/android/branding/nightly
           ac_add_options --enable-update-channel=nightly
           ac_add_options --disable-compile-environment
@@ -84,7 +84,7 @@ jobs:
           ac_add_options --without-nimbus-fml
           ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
           export MOZILLA_OFFICIAL=1
-          export MOZ_ANDROID_FAT_AAR_ARCHITECTURES=armeabi-v7a
+          export MOZ_ANDROID_FAT_AAR_ARCHITECTURES=arm64-v8a
           EOF
 
       - name: mach configure
