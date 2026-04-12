@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,7 +49,7 @@ import org.mozilla.focus.ui.menu.CustomDropdownMenu
 import org.mozilla.focus.ui.menu.MenuItem
 import org.mozilla.focus.ui.theme.focusColors
 
-private const val COLUMNS = 4
+private const val MIN_ITEM_WIDTH_DP = 80
 
 @Composable
 fun TopSites(
@@ -75,9 +76,11 @@ fun TopSites(
     val itemBounds = remember { mutableMapOf<Int, Rect>() }
     var columnRootOffset by remember { mutableStateOf(Offset.Zero) }
 
+    BoxWithConstraints(modifier = Modifier.padding(horizontal = 10.dp)) {
+    val columns = (maxWidth.value / MIN_ITEM_WIDTH_DP).toInt().coerceAtLeast(2)
+
     Column(
         modifier = Modifier
-            .padding(horizontal = 10.dp)
             .onGloballyPositioned { coords ->
                 columnRootOffset = coords.boundsInRoot().topLeft
             }
@@ -135,7 +138,7 @@ fun TopSites(
             },
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        orderedSites.indices.chunked(COLUMNS).forEach { rowIndices ->
+        orderedSites.indices.chunked(columns).forEach { rowIndices ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 rowIndices.forEach { index ->
                     val topSite = orderedSites[index]
@@ -176,12 +179,13 @@ fun TopSites(
                         )
                     }
                 }
-                repeat(COLUMNS - rowIndices.size) {
+                repeat(columns - rowIndices.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }
     }
+    } // BoxWithConstraints
 }
 
 @Composable
