@@ -1,0 +1,43 @@
+name: Build Firefox Focus Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feature/**
+    paths:
+      - "mobile/android/focus-android/**"
+      - ".github/workflows/build-focus-android.yml"
+
+jobs:
+  build-focus-debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (sparse)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            mobile/android/focus-android
+          sparse-checkout-cone-mode: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Build Focus debug APK
+        working-directory: mobile/android/focus-android
+        run: ./gradlew --no-daemon app:assembleFocusDebug
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: focus-debug-apk
+          path: |
+            mobile/android/focus-android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error

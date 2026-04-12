@@ -9,7 +9,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,14 +57,14 @@ fun TopSites(
     onRemoveTopSiteClicked: (TopSite) -> Unit,
     onRenameTopSiteClicked: (TopSite) -> Unit,
 ) {
-    Row(
+    LazyRow(
         modifier = Modifier
             .padding(horizontal = 10.dp)
-            .size(width = 324.dp, height = 86.dp),
+            .height(86.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(28.dp),
     ) {
-        topSites.forEach { topSite ->
+        items(topSites) { topSite ->
             TopSiteItem(
                 topSite = topSite,
                 menuItems = listOfNotNull(
