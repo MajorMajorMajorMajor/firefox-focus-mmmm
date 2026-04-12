@@ -29,6 +29,11 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Install Android emulator component
+        run: |
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "emulator"
+
       - name: Create CI mozconfig
         run: |
           cat > .mozconfig-ci <<'EOF'
