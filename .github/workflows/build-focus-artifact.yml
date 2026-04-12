@@ -50,9 +50,10 @@ jobs:
       - name: Write artifact-mode mozconfig
         run: |
           cat > .mozconfig <<'EOF'
-          ac_add_options --enable-project=mobile/android/focus-android
+          ac_add_options --enable-project=mobile/android
           ac_add_options --enable-artifact-builds
           ac_add_options --target=arm-linux-androideabi
+          ac_add_options --with-branding=mobile/android/branding/nightly
           mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-arm-focus
           EOF
           cat .mozconfig
@@ -62,16 +63,16 @@ jobs:
           MOZ_AUTOMATION: "1"
         run: ./mach configure
 
-      - name: mach build
+      - name: mach build (downloads artifacts)
         env:
           MOZ_AUTOMATION: "1"
         run: ./mach build
 
-      - name: mach package
-        if: always()
+      - name: Gradle assemble Focus debug
+        working-directory: mobile/android/focus-android
         env:
           MOZ_AUTOMATION: "1"
-        run: ./mach package || true
+        run: ../../../gradlew --no-daemon app:assembleFocusDebug
 
       - name: Locate APK
         if: always()
