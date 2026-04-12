@@ -37,8 +37,23 @@ jobs:
       - name: Install bundletool
         run: |
           mkdir -p "$HOME/.mozbuild"
-          curl -fsSL -o "$HOME/.mozbuild/bundletool.jar" \
-            https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar
+          BUNDLETOOL_URL=$(python3 - <<'PY'
+          import json
+          import urllib.request
+
+          with urllib.request.urlopen("https://api.github.com/repos/google/bundletool/releases/latest") as r:
+              release = json.load(r)
+
+          for asset in release.get("assets", []):
+              name = asset.get("name", "")
+              if name.startswith("bundletool-all-") and name.endswith(".jar"):
+                  print(asset["browser_download_url"])
+                  break
+          else:
+              raise SystemExit("No bundletool-all jar found in latest release assets")
+          PY
+          )
+          curl -fsSL -o "$HOME/.mozbuild/bundletool.jar" "$BUNDLETOOL_URL"
 
       - name: Create CI mozconfig
         run: |
