@@ -163,5 +163,7 @@ jobs:
         with:
           name: focus-debug-apk
           path: |
+            obj-*/gradle/build/mobile/android/focus-android/app/outputs/apk/**/*.apk
+            obj-*/gradle/build/mobile/android/focus-android/app/build/outputs/apk/**/*.apk
             mobile/android/focus-android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
