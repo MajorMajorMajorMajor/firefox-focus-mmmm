@@ -78,6 +78,7 @@ jobs:
           ac_add_options --without-nimbus-fml
           ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
           export MOZILLA_OFFICIAL=1
+          export MOZ_ANDROID_FAT_AAR_ARCHITECTURES=armeabi-v7a
           EOF
 
       - name: Set MOZ_BUILD_DATE for Gradle build metadata
