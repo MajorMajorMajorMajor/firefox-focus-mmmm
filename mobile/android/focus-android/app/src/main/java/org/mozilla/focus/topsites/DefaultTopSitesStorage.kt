@@ -63,6 +63,7 @@ class DefaultTopSitesStorage(
     ): List<TopSite> = pinnedSitesStorage.getPinnedSites().take(totalSites)
 
     companion object {
-        const val TOP_SITES_MAX_LIMIT = 20
+        // Keep effectively unbounded so users can pin as many shortcuts as they want.
+        const val TOP_SITES_MAX_LIMIT = Int.MAX_VALUE
     }
 }
