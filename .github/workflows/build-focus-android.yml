@@ -34,6 +34,12 @@ jobs:
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "emulator"
 
+      - name: Install bundletool
+        run: |
+          mkdir -p "$HOME/.mozbuild"
+          curl -fsSL -o "$HOME/.mozbuild/bundletool.jar" \
+            https://github.com/google/bundletool/releases/latest/download/bundletool-all.jar
+
       - name: Create CI mozconfig
         run: |
           cat > .mozconfig-ci <<'EOF'
