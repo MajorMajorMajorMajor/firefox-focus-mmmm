@@ -93,6 +93,7 @@ jobs:
         env:
           MOZ_AUTOMATION: "1"
           MOZCONFIG: .mozconfig-ci
+          GECKO_HEAD_REPOSITORY: "https://hg.mozilla.org/try"
         working-directory: mobile/android/focus-android
         run: ./gradlew --no-daemon app:assembleFocusDebug
 
