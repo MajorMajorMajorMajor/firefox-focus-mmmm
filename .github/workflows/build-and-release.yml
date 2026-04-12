@@ -92,6 +92,16 @@ jobs:
           MOZ_AUTOMATION: "1"
         run: ./mach configure
 
+      - name: Pin application-services to stable release for nimbus-fml download
+        run: |
+          TOPOBJDIR=$(find . -maxdepth 1 -name 'obj-*' -type d | head -1)
+          LOCAL_PROPS="mobile/android/focus-android/local.properties"
+          # The nightly AS version in the tree (151.20260410050312) has no zip on
+          # archive.mozilla.org.  Override to the latest stable release that does.
+          echo "branchBuild.application-services.version=150.0.1" >> "$LOCAL_PROPS"
+          echo "Pinned application-services to 150.0.1 in $LOCAL_PROPS"
+          echo "  objdir: $TOPOBJDIR"
+
       - name: Stub generated CrashReport.java
         run: |
           TOPOBJDIR=$(find . -maxdepth 1 -name 'obj-*' -type d | head -1)
