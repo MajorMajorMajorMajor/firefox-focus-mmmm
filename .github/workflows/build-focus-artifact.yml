@@ -78,6 +78,10 @@ jobs:
           ac_add_options --target=arm-linux-androideabi
           ac_add_options --with-branding=mobile/android/branding/nightly
           ac_add_options --with-android-sdk="$ANDROID_SDK_ROOT"
+          ac_add_options --without-mozilla-api-keyfile
+          ac_add_options --without-google-safebrowsing-api-keyfile
+          ac_add_options --without-embedded-uniffi-bindgen
+          ac_add_options --without-nimbus-fml
           mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-arm-focus
           EOF
           cat .mozconfig
