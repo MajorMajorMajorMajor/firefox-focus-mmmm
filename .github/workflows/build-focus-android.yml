@@ -96,6 +96,60 @@ jobs:
           MOZCONFIG: ${{ github.workspace }}/.mozconfig-ci
         run: ./mach configure
 
+      - name: Stub generated CrashReport.java
+        run: |
+          TOPOBJDIR=$(find . -maxdepth 1 -name 'obj-*' -type d | head -1)
+          STUB_DIR="$TOPOBJDIR/mobile/android/android-components/components/lib/crash/src/main/java/mozilla/components/lib/crash/service"
+          mkdir -p "$STUB_DIR"
+          cat > "$STUB_DIR/CrashReport.java" <<'EOF'
+          package mozilla.components.lib.crash.service;
+
+          public final class CrashReport {
+              public enum Annotation {
+                  AndroidComponentVersion,
+                  Android_Board,
+                  Android_Brand,
+                  Android_CPU_ABI,
+                  Android_CPU_ABI2,
+                  Android_Device,
+                  Android_Display,
+                  Android_Fingerprint,
+                  Android_Hardware,
+                  Android_Manufacturer,
+                  Android_Model,
+                  Android_PackageName,
+                  Android_ProcessName,
+                  Android_Version,
+                  ApplicationBuildID,
+                  ApplicationServicesVersion,
+                  Breadcrumbs,
+                  BuildID,
+                  CrashID,
+                  CrashTime,
+                  CrashType,
+                  DistributionID,
+                  GeckoViewVersion,
+                  GleanVersion,
+                  InstallTime,
+                  JavaException,
+                  JavaStackTrace,
+                  MinidumpSha256Hash,
+                  ProcessType,
+                  ProductID,
+                  ProductName,
+                  ReleaseChannel,
+                  RemoteType,
+                  StartupTime,
+                  Vendor,
+                  Version,
+                  additional_minidumps,
+                  useragent_locale
+              }
+
+              private CrashReport() {}
+          }
+          EOF
+
       - name: Build Focus debug APK
         env:
           MOZ_AUTOMATION: "1"
