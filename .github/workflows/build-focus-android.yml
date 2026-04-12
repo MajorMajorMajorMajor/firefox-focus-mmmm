@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "mobile/android/focus-android/**"
+      - "mobile/android/**"
       - ".github/workflows/build-focus-android.yml"
 
 jobs:
@@ -79,6 +79,9 @@ jobs:
           ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
           export MOZILLA_OFFICIAL=1
           EOF
+
+      - name: Set MOZ_BUILD_DATE for Gradle build metadata
+        run: echo "MOZ_BUILD_DATE=$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_ENV"
 
       - name: Configure Mozilla build environment
         env:
