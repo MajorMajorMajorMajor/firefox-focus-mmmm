@@ -29,11 +29,13 @@ jobs:
 
       - name: Configure Mozilla build environment
         env:
+          MOZ_AUTOMATION: "1"
           MOZCONFIG: mobile/android/config/mozconfigs/android-arm-gradle-dependencies/nightly
         run: ./mach configure
 
       - name: Build Focus debug APK
         env:
+          MOZ_AUTOMATION: "1"
           MOZCONFIG: mobile/android/config/mozconfigs/android-arm-gradle-dependencies/nightly
         working-directory: mobile/android/focus-android
         run: ./gradlew --no-daemon app:assembleFocusDebug
