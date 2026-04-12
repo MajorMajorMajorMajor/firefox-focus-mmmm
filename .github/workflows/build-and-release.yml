@@ -175,12 +175,6 @@ jobs:
           cd mobile/android/focus-android
           ../../../gradlew --no-daemon app:assembleFocusDebug
 
-      - name: Locate APK
-        if: always()
-        run: |
-          echo "=== All APKs ==="
-          find . -name '*.apk' 2>/dev/null | grep -v '.git' || echo "none found"
-
       - name: Upload APK artifact
         if: success()
         uses: actions/upload-artifact@v4
