@@ -160,13 +160,13 @@ jobs:
         env:
           ANDROID_DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
         run: |
-          mkdir -p "$HOME/.android"
-          if [ -n "$ANDROID_DEBUG_KEYSTORE" ]; then
-            echo "$ANDROID_DEBUG_KEYSTORE" | base64 -d > "$HOME/.android/debug.keystore"
-            echo "Restored persistent debug keystore."
-          else
-            echo "WARNING: ANDROID_DEBUG_KEYSTORE secret not set — upgrades via Obtainium will fail."
+          if [ -z "$ANDROID_DEBUG_KEYSTORE" ]; then
+            echo "ERROR: ANDROID_DEBUG_KEYSTORE secret not set — refusing to build (would produce unupgradeable APK)."
+            exit 1
           fi
+          mkdir -p "$HOME/.android"
+          echo "$ANDROID_DEBUG_KEYSTORE" | base64 -d > "$HOME/.android/debug.keystore"
+          echo "Restored persistent debug keystore."
 
       - name: Build Focus debug APK
         env:
