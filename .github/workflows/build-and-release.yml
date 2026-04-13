@@ -173,7 +173,7 @@ jobs:
           MOZ_AUTOMATION: "1"
         run: |
           cd mobile/android/focus-android
-          ../../../gradlew --no-daemon app:assembleFocusDebug
+          ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} app:assembleFocusDebug
 
       - name: Upload APK artifact
         if: success()
