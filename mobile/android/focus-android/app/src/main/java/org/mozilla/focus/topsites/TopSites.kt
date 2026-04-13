@@ -87,6 +87,7 @@ fun TopSites(
             }
             .pointerInput(Unit) {
                 var hasDragged = false
+                var totalDragDistance = 0f
                 var hitIndex: Int? = null
                 detectDragGesturesAfterLongPress(
                     onDragStart = { pressOffset ->
@@ -95,6 +96,7 @@ fun TopSites(
                             .firstOrNull { (_, b) -> b.contains(rootPos) }
                             ?.key
                         hasDragged = false
+                        totalDragDistance = 0f
                         if (hitIndex != null) {
                             draggingIndex = hitIndex
                             dragOffset = Offset.Zero
@@ -103,7 +105,8 @@ fun TopSites(
                     onDrag = { change, amount ->
                         change.consume()
                         val dragIdx = draggingIndex ?: return@detectDragGesturesAfterLongPress
-                        hasDragged = true
+                        totalDragDistance += amount.getDistance()
+                        if (totalDragDistance > 24f) hasDragged = true
                         dragOffset += amount
                         val bounds = itemBounds[dragIdx]
                             ?: return@detectDragGesturesAfterLongPress
@@ -128,12 +131,14 @@ fun TopSites(
                         draggingIndex = null
                         dragOffset = Offset.Zero
                         hasDragged = false
+                        totalDragDistance = 0f
                         hitIndex = null
                     },
                     onDragCancel = {
                         draggingIndex = null
                         dragOffset = Offset.Zero
                         hasDragged = false
+                        totalDragDistance = 0f
                         hitIndex = null
                     },
                 )

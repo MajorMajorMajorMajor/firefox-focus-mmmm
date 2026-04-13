@@ -40,7 +40,7 @@ internal interface PinnedSiteDao {
     }
 
     @WorkerThread
-    @Query("SELECT * FROM top_sites")
+    @Query("SELECT * FROM top_sites ORDER BY id")
     fun getPinnedSites(): List<PinnedSiteEntity>
 
     @WorkerThread
