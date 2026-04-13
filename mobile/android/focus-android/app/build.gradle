@@ -49,7 +49,7 @@ android {
         versionCode 11 // This versionCode is "frozen" for local builds. For "release" builds we
                        // override this with a generated versionCode at build time.
         // The versionName is dynamically overridden for all the build variants at build time.
-        versionName Config.generateDebugVersionName()
+        versionName Config.generateDebugVersionName(project)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
         if (gradle.mozconfig.substs.MOZ_INCLUDE_SOURCE_INFO) {
