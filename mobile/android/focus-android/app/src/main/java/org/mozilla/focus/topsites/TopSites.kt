@@ -34,9 +34,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,6 +74,7 @@ fun TopSites(
         topSites.filter { it.url !in oldUrls }.forEach { orderedSites.add(it) }
     }
 
+    val haptic = LocalHapticFeedback.current
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     var menuExpandedFor by remember { mutableStateOf<Int?>(null) }
@@ -99,6 +102,7 @@ fun TopSites(
                         hasDragged = false
                         totalDragDistance = 0f
                         if (hitIndex != null) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             draggingIndex = hitIndex
                             dragOffset = Offset.Zero
                         }
