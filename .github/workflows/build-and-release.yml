@@ -130,7 +130,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: focus-debug-apk
-          path: "**/app/build/outputs/apk/**/*.apk"
+          path: "**/app-focus-arm64-v8a-debug.apk"
           if-no-files-found: error
 
       - name: Publish GitHub Release
