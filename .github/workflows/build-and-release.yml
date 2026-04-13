@@ -188,12 +188,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="build-$(date -u +%Y.%m.%d)-${GITHUB_SHA::7}"
           APK=$(find . -name 'app-focus-arm64-v8a-debug.apk' -path '*/apk/*' | grep -v '.git' | head -1)
           if [ -z "$APK" ]; then
             echo "ERROR: no APK found to publish"
             exit 1
           fi
+          AAPT=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)
+          TAG=$("$AAPT" dump badging "$APK" | grep -oP "(?<=versionName=')[^']+")
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          git push origin ":refs/tags/$TAG" 2>/dev/null || true
           gh release create "$TAG" \
             --title "Focus $TAG" \
             --notes "Automated build from ${GITHUB_SHA}" \
