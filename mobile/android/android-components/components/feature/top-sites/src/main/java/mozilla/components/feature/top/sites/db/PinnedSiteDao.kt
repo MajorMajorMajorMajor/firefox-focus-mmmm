@@ -51,7 +51,7 @@ internal interface PinnedSiteDao {
     @Transaction
     fun reorderPinnedSites(sites: List<PinnedSiteEntity>) {
         deleteAllPinnedSites()
-        insertAllPinnedSites(sites)
+        insertAllPinnedSites(sites.map { it.copy(id = null) })
     }
 
     @Query("SELECT COUNT(*) FROM top_sites")
