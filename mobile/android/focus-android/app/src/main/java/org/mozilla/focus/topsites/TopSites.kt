@@ -62,12 +62,13 @@ fun TopSites(
     val orderedSites = remember { mutableStateListOf(*topSites.toTypedArray()) }
 
     LaunchedEffect(topSites) {
-        val newUrls = topSites.map { it.url }.toSet()
+        val newByUrl = topSites.associateBy { it.url }
         val oldUrls = orderedSites.map { it.url }.toSet()
-        val iter = orderedSites.iterator()
-        while (iter.hasNext()) {
-            if (iter.next().url !in newUrls) iter.remove()
+        // Update existing entries so title/id changes (rename, reorder) are reflected.
+        orderedSites.indices.forEach { i ->
+            newByUrl[orderedSites[i].url]?.let { orderedSites[i] = it }
         }
+        orderedSites.removeAll { it.url !in newByUrl }
         topSites.filter { it.url !in oldUrls }.forEach { orderedSites.add(it) }
     }
 
