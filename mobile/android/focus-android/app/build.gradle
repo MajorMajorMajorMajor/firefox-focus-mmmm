@@ -46,8 +46,9 @@ android {
         applicationId "org.mozilla"
         minSdk config.minSdkVersion
         targetSdk config.targetSdkVersion
-        versionCode 11 // This versionCode is "frozen" for local builds. For "release" builds we
-                       // override this with a generated versionCode at build time.
+        // Frozen at 11 for local builds. CI passes -PbuildNumber (GitHub run_number) which
+        // overrides this so Android treats each CI APK as an upgrade over the previous.
+        versionCode project.hasProperty("buildNumber") ? project.property("buildNumber").toInteger() : 11
         // The versionName is dynamically overridden for all the build variants at build time.
         versionName Config.generateDebugVersionName(project)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
