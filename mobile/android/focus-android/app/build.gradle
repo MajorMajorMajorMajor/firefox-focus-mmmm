@@ -46,10 +46,11 @@ android {
         applicationId "org.mozilla"
         minSdk config.minSdkVersion
         targetSdk config.targetSdkVersion
-        versionCode 11 // This versionCode is "frozen" for local builds. For "release" builds we
-                       // override this with a generated versionCode at build time.
+        // Frozen at 11 for local builds. CI passes -PbuildNumber (GitHub run_number) which
+        // overrides this so Android treats each CI APK as an upgrade over the previous.
+        versionCode project.hasProperty("buildNumber") ? project.property("buildNumber").toInteger() : 11
         // The versionName is dynamically overridden for all the build variants at build time.
-        versionName Config.generateDebugVersionName()
+        versionName Config.generateDebugVersionName(project)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
         if (gradle.mozconfig.substs.MOZ_INCLUDE_SOURCE_INFO) {
@@ -84,6 +85,20 @@ android {
         abortOnError = false
     }
 
+    // Pin the debug signing keystore to the persistent one the CI workflow
+    // restores from the ANDROID_DEBUG_KEYSTORE secret. Without this override,
+    // AGP resolves a default location that isn't the one we wrote to, so every
+    // build ends up signed with a freshly-auto-generated keystore and Android
+    // refuses the upgrade.
+    signingConfigs {
+        debug {
+            storeFile file("${System.properties['user.home']}/.android/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
     // We have a three dimensional build configuration:
     // BUILD TYPE (debug, release) X PRODUCT FLAVOR (focus, klar)
 
@@ -112,6 +127,7 @@ android {
         debug {
             applicationIdSuffix ".debug"
             matchingFallbacks = ['debug']
+            signingConfig = signingConfigs.debug
         }
         beta {
             initWith release
