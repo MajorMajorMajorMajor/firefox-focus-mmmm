@@ -38,6 +38,14 @@ class DefaultTopSitesStorage(
         notifyObservers { onStorageUpdated() }
     }
 
+    override fun reorderTopSites(topSites: List<TopSite>) {
+        scope.launch {
+            pinnedSitesStorage.reorderPinnedSites(topSites)
+
+            notifyObservers { onStorageUpdated() }
+        }
+    }
+
     override suspend fun getTopSites(
         totalSites: Int,
         frecencyConfig: TopSitesFrecencyConfig?,
@@ -45,6 +53,7 @@ class DefaultTopSitesStorage(
     ): List<TopSite> = pinnedSitesStorage.getPinnedSites().take(totalSites)
 
     companion object {
-        const val TOP_SITES_MAX_LIMIT = 4
+        // Keep effectively unbounded so users can pin as many shortcuts as they want.
+        const val TOP_SITES_MAX_LIMIT = Int.MAX_VALUE
     }
 }
