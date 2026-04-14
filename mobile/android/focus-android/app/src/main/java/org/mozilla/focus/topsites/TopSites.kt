@@ -82,7 +82,7 @@ fun TopSites(
     val itemBounds = remember { mutableMapOf<Int, Rect>() }
     var columnRootOffset by remember { mutableStateOf(Offset.Zero) }
 
-    BoxWithConstraints(modifier = Modifier.padding(horizontal = focusDimensions.paddingText)) {
+    BoxWithConstraints(modifier = Modifier.padding(horizontal = 10.dp)) {
     val columns = (maxWidth.value / MIN_ITEM_WIDTH_DP).toInt().coerceAtLeast(2)
 
     Column(
