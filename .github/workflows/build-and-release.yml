@@ -1,0 +1,221 @@
+name: Build and release Firefox Focus
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "mobile/android/**"
+      - ".github/workflows/build-and-release.yml"
+      - ".github/stubs/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Install exact JDK for mach
+        # actions/setup-java ignores the +build suffix so it can't pin to the exact
+        # version mach requires. Read the expected version from mozboot (same constants
+        # mach uses) and download from the same GitHub releases URL mozboot would use.
+        run: |
+          JAVA_VER=$(python3 - <<'PY'
+          import re
+          with open("python/mozboot/mozboot/android.py") as f:
+              content = f.read()
+          major = re.search(r'JAVA_VERSION_MAJOR\s*=\s*"(\d+)"', content).group(1)
+          minor = re.search(r'JAVA_VERSION_MINOR\s*=\s*"([\d.]+)"', content).group(1)
+          patch = re.search(r'JAVA_VERSION_PATCH\s*=\s*"(\d+)"', content).group(1)
+          print(f"{major}.{minor}+{patch}")
+          PY
+          )
+          echo "Mach expects JDK: $JAVA_VER"
+          MAJOR=$(echo "$JAVA_VER" | cut -d. -f1)
+          MINOR=$(echo "$JAVA_VER" | cut -d. -f2-3 | cut -d+ -f1)
+          PATCH=$(echo "$JAVA_VER" | cut -d+ -f2)
+          URL="https://github.com/adoptium/temurin${MAJOR}-binaries/releases/download/jdk-${MAJOR}.${MINOR}%2B${PATCH}/OpenJDK${MAJOR}U-jdk_x64_linux_hotspot_${MAJOR}.${MINOR}_${PATCH}.tar.gz"
+          echo "Downloading: $URL"
+          mkdir -p "$HOME/.mozbuild/jdk"
+          curl -fsSL "$URL" | tar -xz -C "$HOME/.mozbuild/jdk"
+          EXTRACTED=$(ls -d "$HOME/.mozbuild/jdk/jdk-"* 2>/dev/null | head -1)
+          EXPECTED="$HOME/.mozbuild/jdk/jdk-${JAVA_VER}"
+          if [ "$EXTRACTED" != "$EXPECTED" ]; then
+            mv "$EXTRACTED" "$EXPECTED"
+          fi
+          echo "JAVA_HOME=$EXPECTED" >> "$GITHUB_ENV"
+          echo "Installed: $EXPECTED"
+
+      - name: Install Android emulator component
+        run: |
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "emulator"
+
+      - name: Install bundletool
+        run: |
+          mkdir -p "$HOME/.mozbuild"
+          BUNDLETOOL_URL=$(python3 - <<'PY'
+          import json, urllib.request
+          with urllib.request.urlopen("https://api.github.com/repos/google/bundletool/releases/latest") as r:
+              release = json.load(r)
+          for asset in release.get("assets", []):
+              name = asset.get("name", "")
+              if name.startswith("bundletool-all-") and name.endswith(".jar"):
+                  print(asset["browser_download_url"])
+                  break
+          else:
+              raise SystemExit("No bundletool-all jar found")
+          PY
+          )
+          curl -fsSL -o "$HOME/.mozbuild/bundletool.jar" "$BUNDLETOOL_URL"
+
+      - name: Resolve geckoview-nightly version
+        # <latest> in Maven metadata tracks the nightly channel (currently 151.x).
+        # We need the newest build matching our tree's major.minor (e.g. 149.0).
+        run: |
+          LATEST=$(python3 - <<'PY'
+          import re, urllib.request
+          with open("mobile/android/version.txt") as f:
+              ff_ver = f.read().strip()
+          major_minor = ".".join(ff_ver.split(".")[:2])
+          url = "https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview-nightly-omni/maven-metadata.xml"
+          with urllib.request.urlopen(url) as r:
+              content = r.read().decode()
+          versions = re.findall(r'<version>(' + re.escape(major_minor) + r'\.[^<]+)</version>', content)
+          if not versions:
+              raise SystemExit(f"No geckoview-nightly-omni versions found for {major_minor}")
+          print(sorted(versions)[-1])
+          PY
+          )
+          GECKO_BUILD_DATE=$(echo "$LATEST" | cut -d. -f3)
+          echo "Resolved geckoview: $LATEST (MOZ_BUILD_DATE=$GECKO_BUILD_DATE)"
+          echo "MOZ_BUILD_DATE=$GECKO_BUILD_DATE" >> "$GITHUB_ENV"
+
+      - name: Write mozconfig
+        run: |
+          cat > .mozconfig <<'EOF'
+          . "$topsrcdir/build/mozconfig.common"
+          ac_add_options --enable-project=mobile/android
+          ac_add_options --target=aarch64-linux-android
+          ac_add_options --with-branding=mobile/android/branding/nightly
+          ac_add_options --enable-update-channel=nightly
+          ac_add_options --disable-compile-environment
+          ac_add_options --disable-tests
+          ac_add_options --with-gradle
+          ac_add_options --without-mozilla-api-keyfile
+          ac_add_options --without-google-safebrowsing-api-keyfile
+          ac_add_options --without-embedded-uniffi-bindgen
+          ac_add_options --without-nimbus-fml
+          ac_add_options --with-android-sdk=$ANDROID_SDK_ROOT
+          export MOZILLA_OFFICIAL=1
+          export MOZ_ANDROID_FAT_AAR_ARCHITECTURES=arm64-v8a
+          EOF
+
+      - name: mach configure
+        env:
+          MOZ_AUTOMATION: "1"
+        run: ./mach configure
+
+      - name: Pin application-services to stable release
+        run: |
+          # The nightly AS version in the tree (151.x) has no artifact zip on
+          # archive.mozilla.org.  Override to the latest stable release that does.
+          echo "branchBuild.application-services.version=150.0.1" >> "mobile/android/focus-android/local.properties"
+
+      - name: Stub generated CrashReport.java
+        run: |
+          TOPOBJDIR=$(find . -maxdepth 1 -name 'obj-*' -type d | head -1)
+          STUB_DIR="$TOPOBJDIR/mobile/android/android-components/components/lib/crash/src/main/java/mozilla/components/lib/crash/service"
+          mkdir -p "$STUB_DIR"
+          cp .github/stubs/CrashReport.java "$STUB_DIR/CrashReport.java"
+
+      - name: Restore persistent debug keystore
+        env:
+          ANDROID_DEBUG_KEYSTORE: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
+        run: |
+          if [ -z "$ANDROID_DEBUG_KEYSTORE" ]; then
+            echo "ERROR: ANDROID_DEBUG_KEYSTORE secret not set — refusing to build (would produce unupgradeable APK)."
+            exit 1
+          fi
+          mkdir -p "$HOME/.android"
+          echo "$ANDROID_DEBUG_KEYSTORE" | base64 -d > "$HOME/.android/debug.keystore"
+          SIZE=$(stat -c%s "$HOME/.android/debug.keystore")
+          echo "Keystore size: $SIZE bytes"
+          if ! keytool -list -v -keystore "$HOME/.android/debug.keystore" \
+               -storepass android -alias androiddebugkey > /tmp/ks.txt 2>&1; then
+            echo "ERROR: restored keystore is invalid or alias/password mismatch:"
+            cat /tmp/ks.txt
+            exit 1
+          fi
+          echo "Keystore verified. Certificate fingerprint:"
+          grep -E "SHA1:|SHA-1" /tmp/ks.txt || true
+
+      - name: Build Focus debug APK
+        env:
+          MOZ_AUTOMATION: "1"
+        run: |
+          cd mobile/android/focus-android
+          ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} app:assembleFocusDebug
+
+      - name: Verify APK was signed with the persistent keystore
+        if: success()
+        run: |
+          APK=$(find . -name 'app-focus-arm64-v8a-debug.apk' -path '*/apk/*' | grep -v '.git' | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK not found"
+            exit 1
+          fi
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK"
+          APK_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | awk '/SHA-1 digest/ {print $NF; exit}')
+          KS_SHA1=$(grep -E "SHA1:|SHA-1" /tmp/ks.txt | head -1 | awk -F': ' '{print $2}' | tr -d ':' | tr 'A-Z' 'a-z')
+          APK_SHA1_NORM=$(echo "$APK_SHA1" | tr -d ':' | tr 'A-Z' 'a-z')
+          echo "Keystore SHA-1: $KS_SHA1"
+          echo "APK cert SHA-1: $APK_SHA1_NORM"
+          if [ "$KS_SHA1" != "$APK_SHA1_NORM" ]; then
+            echo "ERROR: APK was NOT signed with the persistent keystore. Obtainium upgrades would break."
+            exit 1
+          fi
+          echo "OK: APK signed with persistent keystore."
+
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: focus-debug-apk
+          path: "**/app-focus-arm64-v8a-debug.apk"
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK=$(find . -name 'app-focus-arm64-v8a-debug.apk' -path '*/apk/*' | grep -v '.git' | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: no APK found to publish"
+            exit 1
+          fi
+          FOCUS_VERSION=$(tr -d '[:space:]' < mobile/android/version.txt)
+          TAG="focus-${FOCUS_VERSION}-build.${GITHUB_RUN_NUMBER}"
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          git push origin ":refs/tags/$TAG" 2>/dev/null || true
+          gh release create "$TAG" \
+            --title "Firefox Focus ${FOCUS_VERSION} (build ${GITHUB_RUN_NUMBER})" \
+            --notes "Automated build from ${GITHUB_SHA}" \
+            "$APK"
