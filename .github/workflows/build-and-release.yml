@@ -27,7 +27,10 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
+          # Pin to the exact version mach expects (python/mozboot/mozboot/android.py
+          # JAVA_VERSION_{MAJOR,MINOR,PATCH}). Stable 149.0.2 pins 17.0.17+10; mach
+          # aborts configure if $HOME/.mozbuild/jdk/jdk-<that-version> is missing.
+          java-version: "17.0.17+10"
           cache: gradle
 
       - name: Link JDK into Mozilla expected path
