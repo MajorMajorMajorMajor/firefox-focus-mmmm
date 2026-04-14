@@ -143,7 +143,8 @@ jobs:
             exit 1
           fi
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
-          APK_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/SHA-1/ {print $2; exit}')
+          "$APKSIGNER" verify --print-certs "$APK"
+          APK_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | awk '/SHA-1 digest/ {print $NF; exit}')
           KS_SHA1=$(grep -E "SHA1:|SHA-1" /tmp/ks.txt | head -1 | awk -F': ' '{print $2}' | tr -d ':' | tr 'A-Z' 'a-z')
           APK_SHA1_NORM=$(echo "$APK_SHA1" | tr -d ':' | tr 'A-Z' 'a-z')
           echo "Keystore SHA-1: $KS_SHA1"
