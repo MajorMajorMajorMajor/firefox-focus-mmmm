@@ -55,6 +55,12 @@ class TopSitesUseCases(topSitesStorage: TopSitesStorage) {
         }
     }
 
+    class ReorderTopSitesUseCase internal constructor(private val storage: TopSitesStorage) {
+        operator fun invoke(topSites: List<TopSite>) {
+            storage.reorderTopSites(topSites)
+        }
+    }
+
     val addPinnedSites: AddPinnedSiteUseCase by lazy {
         AddPinnedSiteUseCase(topSitesStorage)
     }
