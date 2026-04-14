@@ -85,9 +85,23 @@ jobs:
           curl -fsSL -o "$HOME/.mozbuild/bundletool.jar" "$BUNDLETOOL_URL"
 
       - name: Resolve geckoview-nightly version
+        # <latest> in Maven metadata tracks the nightly channel (currently 151.x).
+        # We need the newest build matching our tree's major.minor (e.g. 149.0).
         run: |
-          LATEST=$(curl -fsSL "https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview-nightly-omni/maven-metadata.xml" \
-            | python3 -c "import sys,re; m=re.search(r'<latest>(.*?)</latest>', sys.stdin.read()); print(m.group(1))")
+          LATEST=$(python3 - <<'PY'
+          import re, urllib.request
+          with open("mobile/android/version.txt") as f:
+              ff_ver = f.read().strip()
+          major_minor = ".".join(ff_ver.split(".")[:2])
+          url = "https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview-nightly-omni/maven-metadata.xml"
+          with urllib.request.urlopen(url) as r:
+              content = r.read().decode()
+          versions = re.findall(r'<version>(' + re.escape(major_minor) + r'\.[^<]+)</version>', content)
+          if not versions:
+              raise SystemExit(f"No geckoview-nightly-omni versions found for {major_minor}")
+          print(sorted(versions)[-1])
+          PY
+          )
           GECKO_BUILD_DATE=$(echo "$LATEST" | cut -d. -f3)
           echo "Resolved geckoview: $LATEST (MOZ_BUILD_DATE=$GECKO_BUILD_DATE)"
           echo "MOZ_BUILD_DATE=$GECKO_BUILD_DATE" >> "$GITHUB_ENV"
