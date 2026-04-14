@@ -46,6 +46,8 @@ interface TopSitesStorage : Observable<TopSitesStorage.Observer> {
      */
     fun updateTopSite(topSite: TopSite, title: String, url: String)
 
+    fun reorderTopSites(topSites: List<TopSite>) {}
+
     /**
      * Return a unified list of top sites based on the given number of sites desired.
      * If `frecencyConfig` is specified, fill in any missing top sites with frecent top site results.
