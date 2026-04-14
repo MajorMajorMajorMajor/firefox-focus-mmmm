@@ -32,24 +32,27 @@ jobs:
 
       - name: Install exact JDK for mach
         # actions/setup-java ignores the +build suffix so it can't pin to the exact
-        # version mach requires. Read the expected version from mozboot and download
-        # directly from Adoptium so the path matches what mach looks for.
+        # version mach requires. Read the expected version from mozboot (same constants
+        # mach uses) and download from the same GitHub releases URL mozboot would use.
         run: |
           JAVA_VER=$(python3 - <<'PY'
           import re
           with open("python/mozboot/mozboot/android.py") as f:
               content = f.read()
-          major = re.search(r'JAVA_VERSION_MAJOR\s*=\s*(\d+)', content).group(1)
+          major = re.search(r'JAVA_VERSION_MAJOR\s*=\s*"(\d+)"', content).group(1)
           minor = re.search(r'JAVA_VERSION_MINOR\s*=\s*"([\d.]+)"', content).group(1)
-          patch = re.search(r'JAVA_VERSION_PATCH\s*=\s*(\d+)', content).group(1)
+          patch = re.search(r'JAVA_VERSION_PATCH\s*=\s*"(\d+)"', content).group(1)
           print(f"{major}.{minor}+{patch}")
           PY
           )
           echo "Mach expects JDK: $JAVA_VER"
+          MAJOR=$(echo "$JAVA_VER" | cut -d. -f1)
+          MINOR=$(echo "$JAVA_VER" | cut -d. -f2-3 | cut -d+ -f1)
+          PATCH=$(echo "$JAVA_VER" | cut -d+ -f2)
+          URL="https://github.com/adoptium/temurin${MAJOR}-binaries/releases/download/jdk-${MAJOR}.${MINOR}%2B${PATCH}/OpenJDK${MAJOR}U-jdk_x64_linux_hotspot_${MAJOR}.${MINOR}_${PATCH}.tar.gz"
+          echo "Downloading: $URL"
           mkdir -p "$HOME/.mozbuild/jdk"
-          JAVA_VER_ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('jdk-$JAVA_VER'))")
-          curl -fsSL "https://api.adoptium.net/v3/binary/version/${JAVA_VER_ENC}/linux/x64/jdk/hotspot/normal/eclipse" \
-            | tar -xz -C "$HOME/.mozbuild/jdk"
+          curl -fsSL "$URL" | tar -xz -C "$HOME/.mozbuild/jdk"
           EXTRACTED=$(ls -d "$HOME/.mozbuild/jdk/jdk-"* 2>/dev/null | head -1)
           EXPECTED="$HOME/.mozbuild/jdk/jdk-${JAVA_VER}"
           if [ "$EXTRACTED" != "$EXPECTED" ]; then
