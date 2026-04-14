@@ -85,6 +85,20 @@ android {
         abortOnError = false
     }
 
+    // Pin the debug signing keystore to the persistent one the CI workflow
+    // restores from the ANDROID_DEBUG_KEYSTORE secret. Without this override,
+    // AGP resolves a default location that isn't the one we wrote to, so every
+    // build ends up signed with a freshly-auto-generated keystore and Android
+    // refuses the upgrade.
+    signingConfigs {
+        debug {
+            storeFile file("${System.properties['user.home']}/.android/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
     // We have a three dimensional build configuration:
     // BUILD TYPE (debug, release) X PRODUCT FLAVOR (focus, klar)
 
@@ -113,6 +127,7 @@ android {
         debug {
             applicationIdSuffix ".debug"
             matchingFallbacks = ['debug']
+            signingConfig = signingConfigs.debug
         }
         beta {
             initWith release

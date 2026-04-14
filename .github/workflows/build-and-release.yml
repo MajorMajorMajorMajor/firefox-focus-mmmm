@@ -116,7 +116,16 @@ jobs:
           fi
           mkdir -p "$HOME/.android"
           echo "$ANDROID_DEBUG_KEYSTORE" | base64 -d > "$HOME/.android/debug.keystore"
-          echo "Restored persistent debug keystore."
+          SIZE=$(stat -c%s "$HOME/.android/debug.keystore")
+          echo "Keystore size: $SIZE bytes"
+          if ! keytool -list -v -keystore "$HOME/.android/debug.keystore" \
+               -storepass android -alias androiddebugkey > /tmp/ks.txt 2>&1; then
+            echo "ERROR: restored keystore is invalid or alias/password mismatch:"
+            cat /tmp/ks.txt
+            exit 1
+          fi
+          echo "Keystore verified. Certificate fingerprint:"
+          grep -E "SHA1:|SHA-1" /tmp/ks.txt || true
 
       - name: Build Focus debug APK
         env:
@@ -124,6 +133,26 @@ jobs:
         run: |
           cd mobile/android/focus-android
           ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} app:assembleFocusDebug
+
+      - name: Verify APK was signed with the persistent keystore
+        if: success()
+        run: |
+          APK=$(find . -name 'app-focus-arm64-v8a-debug.apk' -path '*/apk/*' | grep -v '.git' | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK not found"
+            exit 1
+          fi
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -1)
+          APK_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/SHA-1/ {print $2; exit}')
+          KS_SHA1=$(grep -E "SHA1:|SHA-1" /tmp/ks.txt | head -1 | awk -F': ' '{print $2}' | tr -d ':' | tr 'A-Z' 'a-z')
+          APK_SHA1_NORM=$(echo "$APK_SHA1" | tr -d ':' | tr 'A-Z' 'a-z')
+          echo "Keystore SHA-1: $KS_SHA1"
+          echo "APK cert SHA-1: $APK_SHA1_NORM"
+          if [ "$KS_SHA1" != "$APK_SHA1_NORM" ]; then
+            echo "ERROR: APK was NOT signed with the persistent keystore. Obtainium upgrades would break."
+            exit 1
+          fi
+          echo "OK: APK signed with persistent keystore."
 
       - name: Upload APK artifact
         if: success()
