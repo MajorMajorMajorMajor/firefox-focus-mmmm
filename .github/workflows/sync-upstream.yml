@@ -1,0 +1,89 @@
+name: Sync to latest stable Firefox Android release
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # Monday 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork (full history)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          filter: 'blob:none'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch upstream-mirror branch
+        run: |
+          git fetch origin 'refs/heads/upstream-mirror:refs/remotes/origin/upstream-mirror'
+
+      - name: Find latest Firefox Android stable release tag
+        id: tag
+        run: |
+          LATEST=$(git ls-remote --tags \
+            https://github.com/mozilla-firefox/firefox.git \
+            'refs/tags/FIREFOX-ANDROID_*_RELEASE' \
+            | awk '{print $2}' | sed 's|refs/tags/||' \
+            | grep -vE 'b[0-9]' \
+            | awk -F_ '{printf "%d.%d.%d %s\n", $2, $3, ($4=="RELEASE"?0:$4), $0}' \
+            | sort -t. -k1,1n -k2,2n -k3,3n \
+            | tail -1 | awk '{print $2}')
+          if [ -z "$LATEST" ]; then
+            echo "ERROR: could not determine latest release tag"
+            exit 1
+          fi
+          echo "Latest upstream Firefox Android stable tag: $LATEST"
+          echo "tag=$LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Check if already up-to-date
+        id: check
+        run: |
+          CURRENT=$(git rev-parse origin/upstream-mirror)
+          TARGET=$(git ls-remote \
+            https://github.com/mozilla-firefox/firefox.git \
+            "refs/tags/${{ steps.tag.outputs.tag }}" | awk '{print $1}')
+          if [ -z "$TARGET" ]; then
+            echo "ERROR: could not resolve tag to commit"
+            exit 1
+          fi
+          echo "Current upstream-mirror: $CURRENT"
+          echo "Target release commit:   $TARGET"
+          if [ "$CURRENT" = "$TARGET" ]; then
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch stable release commit
+        if: steps.check.outputs.up_to_date == 'false'
+        run: |
+          git remote add upstream https://github.com/mozilla-firefox/firefox.git
+          git fetch --filter=blob:none --depth=200 upstream \
+            "refs/tags/${{ steps.tag.outputs.tag }}:refs/tags/${{ steps.tag.outputs.tag }}"
+
+      - name: Rebase main onto new release and push
+        if: steps.check.outputs.up_to_date == 'false'
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+
+          git checkout -B main origin/main
+          git rebase --onto "refs/tags/${{ steps.tag.outputs.tag }}" origin/upstream-mirror main
+
+          git push origin "refs/tags/${{ steps.tag.outputs.tag }}^{commit}:refs/heads/upstream-mirror" --force
+          git push origin main --force-with-lease
+
+      - name: Report status
+        run: |
+          if [ "${{ steps.check.outputs.up_to_date }}" = "true" ]; then
+            echo "Already on latest Firefox Android stable release (${{ steps.tag.outputs.tag }}). Nothing to do."
+          else
+            echo "Rebased main onto ${{ steps.tag.outputs.tag }} and pushed."
+          fi
