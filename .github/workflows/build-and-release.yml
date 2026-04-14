@@ -27,18 +27,36 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          # Pin to the exact version mach expects (python/mozboot/mozboot/android.py
-          # JAVA_VERSION_{MAJOR,MINOR,PATCH}). Stable 149.0.2 pins 17.0.17+10; mach
-          # aborts configure if $HOME/.mozbuild/jdk/jdk-<that-version> is missing.
-          java-version: "17.0.17+10"
+          java-version: "17"
           cache: gradle
 
-      - name: Link JDK into Mozilla expected path
+      - name: Install exact JDK for mach
+        # actions/setup-java ignores the +build suffix so it can't pin to the exact
+        # version mach requires. Read the expected version from mozboot and download
+        # directly from Adoptium so the path matches what mach looks for.
         run: |
-          JAVA_RUNTIME_VERSION=$(java -XshowSettings:properties -version 2>&1 | sed -n 's/.*java.runtime.version = //p' | head -n1)
-          JAVA_RUNTIME_VERSION=${JAVA_RUNTIME_VERSION%%-*}
+          JAVA_VER=$(python3 - <<'PY'
+          import re
+          with open("python/mozboot/mozboot/android.py") as f:
+              content = f.read()
+          major = re.search(r'JAVA_VERSION_MAJOR\s*=\s*(\d+)', content).group(1)
+          minor = re.search(r'JAVA_VERSION_MINOR\s*=\s*"([\d.]+)"', content).group(1)
+          patch = re.search(r'JAVA_VERSION_PATCH\s*=\s*(\d+)', content).group(1)
+          print(f"{major}.{minor}+{patch}")
+          PY
+          )
+          echo "Mach expects JDK: $JAVA_VER"
           mkdir -p "$HOME/.mozbuild/jdk"
-          ln -sfn "$JAVA_HOME" "$HOME/.mozbuild/jdk/jdk-$JAVA_RUNTIME_VERSION"
+          JAVA_VER_ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('jdk-$JAVA_VER'))")
+          curl -fsSL "https://api.adoptium.net/v3/binary/version/${JAVA_VER_ENC}/linux/x64/jdk/hotspot/normal/eclipse" \
+            | tar -xz -C "$HOME/.mozbuild/jdk"
+          EXTRACTED=$(ls -d "$HOME/.mozbuild/jdk/jdk-"* 2>/dev/null | head -1)
+          EXPECTED="$HOME/.mozbuild/jdk/jdk-${JAVA_VER}"
+          if [ "$EXTRACTED" != "$EXPECTED" ]; then
+            mv "$EXTRACTED" "$EXPECTED"
+          fi
+          echo "JAVA_HOME=$EXPECTED" >> "$GITHUB_ENV"
+          echo "Installed: $EXPECTED"
 
       - name: Install Android emulator component
         run: |
