@@ -154,6 +154,7 @@ class Components(
             javascriptEnabled = !settings.shouldBlockJavaScript(),
             remoteDebuggingEnabled = settings.shouldEnableRemoteDebugging(),
             webFontsEnabled = !settings.shouldBlockWebFonts(),
+            fontInflationEnabled = settings.shouldEnableFontInflation(),
             httpsOnlyMode = settings.getHttpsOnlyMode(),
             preferredColorScheme = settings.getPreferredColorScheme(),
             cookieBannerHandlingModePrivateBrowsing = settings.getCurrentCookieBannerOptionFromSharePref().mode,
