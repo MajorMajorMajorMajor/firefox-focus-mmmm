@@ -169,8 +169,9 @@ jobs:
         env:
           MOZ_AUTOMATION: "1"
         run: |
+          FOCUS_VERSION=$(tr -d '[:space:]' < mobile/android/version.txt)
           cd mobile/android/focus-android
-          ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} app:assembleFocusDebug
+          ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} -PversionName=$FOCUS_VERSION app:assembleFocusDebug
 
       - name: Verify APK was signed with the persistent keystore
         if: success()
