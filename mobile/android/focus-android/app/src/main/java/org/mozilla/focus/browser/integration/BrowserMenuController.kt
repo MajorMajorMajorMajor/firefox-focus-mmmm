@@ -30,6 +30,8 @@ data class BrowserMenuCallbacks(
     val requestDesktopCallback: (isChecked: Boolean) -> Unit,
     val addToHomeScreenCallback: () -> Unit,
     val showFindInPageCallback: () -> Unit,
+    val toggleReaderViewCallback: () -> Unit,
+    val showReaderViewAppearanceCallback: () -> Unit,
     val openInCallback: () -> Unit,
     val openInBrowser: () -> Unit,
     val showShortcutAddedSnackBar: () -> Unit,
@@ -104,6 +106,8 @@ class BrowserMenuController(
             )
             is ToolbarMenu.Item.Share -> callbacks.shareCallback()
             is ToolbarMenu.Item.FindInPage, ToolbarMenu.CustomTabItem.FindInPage -> callbacks.showFindInPageCallback()
+            is ToolbarMenu.Item.ReaderView -> callbacks.toggleReaderViewCallback()
+            is ToolbarMenu.Item.ReaderViewAppearance -> callbacks.showReaderViewAppearanceCallback()
             is ToolbarMenu.Item.AddToShortcuts -> {
                 addToShortcuts()
                 callbacks.showShortcutAddedSnackBar()
@@ -206,6 +210,9 @@ class BrowserMenuController(
             ToolbarMenu.Item.FindInPage -> BrowserMenu.browserMenuAction.record(
                 BrowserMenu.BrowserMenuActionExtra(TelemetryActions.FIND_IN_PAGE),
             )
+
+            ToolbarMenu.Item.ReaderView -> {}
+            ToolbarMenu.Item.ReaderViewAppearance -> {}
 
             ToolbarMenu.Item.AddToShortcuts ->
                 Shortcuts.shortcutAddedCounter.add()
