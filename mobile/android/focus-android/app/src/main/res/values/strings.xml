@@ -1062,4 +1062,7 @@
     <!-- Message shown to explain how to exit fullscreen mode when using back button navigation. -->
     <!-- This text should be as short as possible, max 68 chars -->
     <string name="exit_fullscreen_with_back_button_short">Drag from top &amp; press back to exit</string>
+
+    <string name="reader_view_enable">Reader View</string>
+    <string name="reader_view_disable">Exit Reader View</string>
 </resources>
