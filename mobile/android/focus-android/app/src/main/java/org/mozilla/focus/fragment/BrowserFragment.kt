@@ -125,6 +125,9 @@ import org.mozilla.focus.utils.FocusSnackbar
 import org.mozilla.focus.utils.FocusSnackbarDelegate
 import org.mozilla.focus.utils.ViewUtils
 import java.net.URLEncoder
+import mozilla.components.browser.toolbar.BrowserToolbar
+import androidx.appcompat.content.res.AppCompatResources
+import mozilla.components.ui.icons.R as iconsR
 
 /**
  * Fragment for displaying the browser UI.
@@ -322,14 +325,43 @@ class BrowserFragment :
         )
     }
 
+    private var readerViewAvailable = false
+    private var readerViewActive = false
+
+    private val readerViewPageAction by lazy {
+        BrowserToolbar.ToggleButton(
+            image = AppCompatResources.getDrawable(
+                requireContext(),
+                iconsR.drawable.mozac_ic_reader_view_24,
+            )!!,
+            imageSelected = AppCompatResources.getDrawable(
+                requireContext(),
+                iconsR.drawable.mozac_ic_reader_view_fill_24,
+            )!!,
+            contentDescription = getString(R.string.reader_view_enable),
+            contentDescriptionSelected = getString(R.string.reader_view_disable),
+            visible = { readerViewAvailable || readerViewActive },
+            selected = readerViewActive,
+        ) { _ ->
+            toggleReaderView()
+        }
+    }
+
     private fun initializeReaderViewFeature(view: View, components: Components) {
+        binding.browserToolbar.addPageAction(readerViewPageAction)
+
         readerViewFeature.set(
             ReaderViewFeature(
                 requireContext(),
                 components.engine,
                 components.store,
                 binding.readerViewControls,
-            ),
+            ) { available, active ->
+                readerViewAvailable = available
+                readerViewActive = active
+                readerViewPageAction.setSelected(active, notifyListener = false)
+                binding.browserToolbar.invalidateActions()
+            },
             this,
             view,
         )
