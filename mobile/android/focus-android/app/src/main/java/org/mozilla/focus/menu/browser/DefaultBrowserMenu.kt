@@ -139,7 +139,8 @@ class DefaultBrowserMenu(
             secondaryLabel = context.getString(R.string.reader_view_disable),
             secondaryStateIconResource = iconsR.drawable.mozac_ic_reader_view_fill_24,
             isInPrimaryState = {
-                store.state.selectedTab?.readerState?.active != true
+                val tab = store.state.selectedTab
+                tab?.readerState?.readerable == true && !tab.readerState.active
             },
             isInSecondaryState = {
                 store.state.selectedTab?.readerState?.active == true
@@ -147,13 +148,6 @@ class DefaultBrowserMenu(
             primaryStateAction = { onItemTapped.invoke(ToolbarMenu.Item.ReaderView) },
             secondaryStateAction = { onItemTapped.invoke(ToolbarMenu.Item.ReaderView) },
         )
-
-        val readerViewAppearance = BrowserMenuImageText(
-            label = context.getString(R.string.reader_view_appearance),
-            imageResource = iconsR.drawable.mozac_ic_tool_24,
-        ) {
-            onItemTapped.invoke(ToolbarMenu.Item.ReaderViewAppearance)
-        }
 
         val desktopMode = BrowserMenuImageSwitch(
             imageResource = iconsR.drawable.mozac_ic_device_desktop_24,
@@ -204,7 +198,6 @@ class DefaultBrowserMenu(
             shortcutsDivider,
             findInPage,
             readerView,
-            readerViewAppearance.apply { visible = { store.state.selectedTab?.readerState?.active == true } },
             desktopMode.apply { visible = { selectedSession?.content?.isPdf == false } },
             reportSiteIssuePlaceholder,
             BrowserMenuDivider(),

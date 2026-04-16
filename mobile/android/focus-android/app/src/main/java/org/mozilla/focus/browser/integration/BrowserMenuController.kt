@@ -54,7 +54,15 @@ class BrowserMenuController(
     private val store: BrowserStore,
     private val topSitesUseCases: TopSitesUseCases,
     private val currentTabId: String,
-    private val callbacks: BrowserMenuCallbacks,
+    private val shareCallback: () -> Unit,
+    private val requestDesktopCallback: (isChecked: Boolean) -> Unit,
+    private val addToHomeScreenCallback: () -> Unit,
+    private val showFindInPageCallback: () -> Unit,
+    private val toggleReaderViewCallback: () -> Unit,
+    private val showReaderViewAppearanceCallback: () -> Unit,
+    private val openInCallback: () -> Unit,
+    private val openInBrowser: () -> Unit,
+    private val showShortcutAddedSnackBar: () -> Unit,
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO),
 ) {
     @VisibleForTesting
@@ -104,10 +112,10 @@ class BrowserMenuController(
             is ToolbarMenu.Item.Stop, ToolbarMenu.CustomTabItem.Stop -> sessionUseCases.stopLoading(
                 currentTabId,
             )
-            is ToolbarMenu.Item.Share -> callbacks.shareCallback()
-            is ToolbarMenu.Item.FindInPage, ToolbarMenu.CustomTabItem.FindInPage -> callbacks.showFindInPageCallback()
-            is ToolbarMenu.Item.ReaderView -> callbacks.toggleReaderViewCallback()
-            is ToolbarMenu.Item.ReaderViewAppearance -> callbacks.showReaderViewAppearanceCallback()
+            is ToolbarMenu.Item.Share -> shareCallback()
+            is ToolbarMenu.Item.FindInPage, ToolbarMenu.CustomTabItem.FindInPage -> showFindInPageCallback()
+            is ToolbarMenu.Item.ReaderView -> toggleReaderViewCallback()
+            is ToolbarMenu.Item.ReaderViewAppearance -> showReaderViewAppearanceCallback()
             is ToolbarMenu.Item.AddToShortcuts -> {
                 addToShortcuts()
                 callbacks.showShortcutAddedSnackBar()
