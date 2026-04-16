@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.privateTabs
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.CustomTabConfig
 import mozilla.components.browser.state.state.CustomTabSessionState
 import mozilla.components.browser.state.state.ExternalAppType
@@ -54,6 +55,7 @@ import mozilla.components.feature.downloads.temporary.ShareResourceFeature
 import mozilla.components.feature.media.fullscreen.MediaSessionFullscreenFeature
 import mozilla.components.feature.prompts.PromptFeature
 import mozilla.components.feature.prompts.file.AndroidPhotoPicker
+import mozilla.components.feature.readerview.ReaderViewFeature
 import mozilla.components.feature.session.PictureInPictureFeature
 import mozilla.components.feature.session.SessionFeature
 import mozilla.components.feature.sitepermissions.SitePermissionsFeature
@@ -135,6 +137,7 @@ class BrowserFragment :
     private val binding get() = _binding!!
 
     private val findInPageIntegration = ViewBoundFeatureWrapper<FindInPageIntegration>()
+    private val readerViewFeature = ViewBoundFeatureWrapper<ReaderViewFeature>()
     private val fullScreenIntegration = ViewBoundFeatureWrapper<FullScreenIntegration>()
     private var pictureInPictureFeature: PictureInPictureFeature? = null
 
@@ -279,6 +282,7 @@ class BrowserFragment :
         val components = requireComponents
 
         initializeFindInPageFeature(view, components)
+        initializeReaderViewFeature(view, components)
         initializeFullScreenIntegrationFeature(view, components)
         initializePictureInPictureFeature(components)
         initializeContextMenuFeature(view, components)
@@ -302,6 +306,19 @@ class BrowserFragment :
                 binding.findInPage,
                 binding.browserToolbar,
                 binding.engineView,
+            ),
+            this,
+            view,
+        )
+    }
+
+    private fun initializeReaderViewFeature(view: View, components: Components) {
+        readerViewFeature.set(
+            ReaderViewFeature(
+                requireContext(),
+                components.engine,
+                components.store,
+                binding.readerViewControls,
             ),
             this,
             view,
@@ -631,6 +648,8 @@ class BrowserFragment :
             ::toggleDesktopSite,
             ::showAddToHomescreenDialog,
             ::showFindInPageBar,
+            ::toggleReaderView,
+            ::showReaderViewAppearance,
             ::openSelectBrowser,
             ::openInBrowser,
             ::showShortcutAddedSnackBar,
@@ -917,7 +936,9 @@ class BrowserFragment :
 
     @Suppress("ReturnCount")
     override fun onBackPressed(): Boolean {
-        if (findInPageIntegration.onBackPressed()) {
+        if (readerViewFeature.onBackPressed()) {
+            return true
+        } else if (findInPageIntegration.onBackPressed()) {
             return true
         } else if (fullScreenIntegration.onBackPressed()) {
             return true
@@ -1036,6 +1057,21 @@ class BrowserFragment :
 
     private fun showFindInPageBar() {
         findInPageIntegration.get()?.show(tab)
+    }
+
+    private fun toggleReaderView() {
+        readerViewFeature.withFeature { feature ->
+            val tab = requireComponents.store.state.selectedTab
+            if (tab?.readerState?.active == true) {
+                feature.hideReaderView()
+            } else {
+                feature.showReaderView()
+            }
+        }
+    }
+
+    private fun showReaderViewAppearance() {
+        readerViewFeature.withFeature { it.showControls() }
     }
 
     private fun openSelectBrowser() {
