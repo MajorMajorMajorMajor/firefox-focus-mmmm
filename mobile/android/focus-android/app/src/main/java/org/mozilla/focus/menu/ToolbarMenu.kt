@@ -64,6 +64,12 @@ interface ToolbarMenu {
 
         /** Stops the current page from loading. */
         object Stop : Item()
+
+        /** Toggles reader view. */
+        object ReaderView : Item()
+
+        /** Shows reader view appearance controls. */
+        object ReaderViewAppearance : Item()
     }
 
     /**
