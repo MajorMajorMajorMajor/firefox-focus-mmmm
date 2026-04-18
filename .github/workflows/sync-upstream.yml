@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   sync:
@@ -92,10 +93,16 @@ jobs:
           git push origin src-automation:src/automation --force-with-lease
           git push origin dist-main:dist/main --force-with-lease
 
+      - name: Dispatch build-and-release
+        if: steps.check.outputs.up_to_date == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run build-and-release.yml --ref dist/main
+
       - name: Report status
         run: |
           if [ "${{ steps.check.outputs.up_to_date }}" = "true" ]; then
             echo "Already on latest Firefox Android stable release (${{ steps.tag.outputs.tag }}). Nothing to do."
           else
-            echo "Rebased src/patches/current and src/automation onto ${{ steps.tag.outputs.tag }}; updated dist/main."
+            echo "Rebased src/patches/current and src/automation onto ${{ steps.tag.outputs.tag }}; updated dist/main and dispatched build-and-release."
           fi
