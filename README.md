@@ -1,34 +1,35 @@
-# Firefox Focus (mmmm fork)
+# Firefox Focus: My Custom Fork
 
-A custom build of [Firefox Focus for Android](https://github.com/mozilla-mobile/firefox-android) with a handful of quality-of-life patches applied on top of upstream releases.
+A custom build of [Firefox Focus for Android](https://github.com/mozilla-mobile/firefox-android) with quality-of-life patches automatically applied on top of upstream releases.
 
-## What's different
+## Added Features
 
-- **No shortcuts cap** — the default build limits the number of home screen shortcuts (Top Sites). This fork removes that cap.
-- **Grid layout with dynamic columns** — shortcuts display in a proper grid that adapts to screen width, instead of a fixed single-row strip.
-- **Drag-to-reorder shortcuts** — long-press any shortcut to drag it to a new position.
-- **Font inflation toggle** — adds a setting to disable Android's automatic text size inflation on desktop-layout pages, so pages render at the size the site intended.
-- **Reader mode** — adds a reader mode button to the address bar and a reader mode entry in the browser menu, with appearance controls (font size, line width, theme).
-- **Build watermark** — the new-tab page shows the build number in the corner so you can confirm which version is running.
+- **Reworked shortcuts feature**
+  - Add an unlimited number of shortcuts (was a maximum of 4)
+  - Shortcuts display in a grid that adapts to screen width
+  - Long-press any shortcut to drag it to a new position.
+    
+- **Fix font rendering**
+  - Trigger Android's automatic text size inflation on non-mobile aware pages the way Firefox for Android does
+  - Control this behaviour with a new option: `Settings` -> `Privacy & Security` -> `Web Content` -> `Scale text for readability`
+    
+- **Add reader mode**
+  - Reader mode brought over from Firefox for Android
+  - Address bar button to activate reader mode, appears if a compatible page is detected
+  - Reader mode entry in the browser menu which *always appears*, so reader mode can be forced even if the detection failed
+    
+- **Build watermark**
+  - The New Tab page show a watermark with the Firefox release version and the build number for this fork
 
 ## Install
 
-Grab the latest APK from the [Releases](../../releases/latest) page (`app-focus-arm64-v8a-debug.apk`). The APK is signed with a stable debug key so upgrades install over previous builds without uninstalling first.
+### Manual install
 
-**arm64-v8a only** — this build targets 64-bit ARM devices.
+Grab the latest APK from the [Releases](../../releases/latest) page. New releases are published automatically whenever upstream ships a new Focus version.
 
 ### Obtainium
 
-Point Obtainium at this repo (`MajorMajorMajorMajor/firefox-focus-mmmm`) and filter the asset name to `app-focus-arm64-v8a-debug.apk`. New releases are published automatically whenever upstream ships a new Focus version.
-
-## Build
-
-Releases are built automatically via GitHub Actions on every push to `main` that touches the Android source or CI files. The workflow:
-
-1. Checks out the repo
-2. Builds `app-focus-arm64-v8a-debug.apk` via `./mach build`
-3. Signs with a persistent debug keystore (stored as the `ANDROID_DEBUG_KEYSTORE` repo secret)
-4. Publishes a GitHub Release tagged `focus-<version>-build-<run_number>`
+Control updates with Obtainium by pointing it at this GitHub repository.
 
 ## Branch layout
 
