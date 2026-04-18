@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Checkout
@@ -31,11 +32,26 @@ jobs:
           git rebase origin/src/patches/current
 
       - name: Reset dist/main to src/automation
+        id: reset_dist
         run: |
+          PREV_DIST=$(git rev-parse origin/dist/main)
           git checkout -B dist-main-local origin/dist/main
           git reset --hard src/automation
+          NEW_DIST=$(git rev-parse dist-main-local)
+          if [ "$PREV_DIST" = "$NEW_DIST" ]; then
+            echo "dist_changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "dist_changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Force-push
+        if: steps.reset_dist.outputs.dist_changed == 'true'
         run: |
           git push --force-with-lease origin src/automation:src/automation
           git push --force-with-lease origin dist-main-local:dist/main
+
+      - name: Dispatch build-and-release
+        if: steps.reset_dist.outputs.dist_changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run build-and-release.yml --ref dist/main
