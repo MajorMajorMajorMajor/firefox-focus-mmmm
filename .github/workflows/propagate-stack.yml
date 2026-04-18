@@ -1,0 +1,40 @@
+name: Propagate stack to main
+
+on:
+  workflow_dispatch:
+
+jobs:
+  propagate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Fetch all branches
+        run: git fetch origin
+
+      - name: Rebase src/automation onto src/patches
+        run: |
+          git checkout -b src/automation origin/src/automation
+          git rebase origin/src/patches
+
+      - name: Reset main to src/automation
+        run: |
+          git checkout -b main-local origin/main
+          git reset --hard src/automation
+
+      - name: Force-push
+        run: |
+          git push --force-with-lease origin src/automation:src/automation
+          git push --force-with-lease origin main-local:main
