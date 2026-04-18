@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - dist/main
     paths:
       - "mobile/android/**"
       - ".github/workflows/build-and-release.yml"
@@ -203,16 +203,16 @@ jobs:
           if-no-files-found: error
 
       - name: Fetch branch refs for release notes
-        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dist/main'
         run: |
           git fetch origin \
-            refs/heads/upstream-mirror:refs/remotes/origin/upstream-mirror \
-            refs/heads/src/patches:refs/remotes/origin/src/patches \
+            refs/heads/src/upstream:refs/remotes/origin/src/upstream \
+            refs/heads/src/patches/current:refs/remotes/origin/src/patches/current \
             refs/heads/src/automation:refs/remotes/origin/src/automation \
             --tags
 
       - name: Generate release notes
-        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dist/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -243,13 +243,13 @@ jobs:
           if [ -n "$RANGE" ]; then
             while IFS= read -r commit; do
               [ -z "$commit" ] && continue
-              if git merge-base --is-ancestor "$commit" origin/upstream-mirror; then
+              if git merge-base --is-ancestor "$commit" origin/src/upstream; then
                 continue
               fi
               short=$(git show -s --format='%h' "$commit")
               subject=$(git show -s --format='%s' "$commit")
               line="- ${short} ${subject}"
-              if git merge-base --is-ancestor "$commit" origin/src/patches; then
+              if git merge-base --is-ancestor "$commit" origin/src/patches/current; then
                 PATCH_LINES+="$line"$'\n'
               elif git merge-base --is-ancestor "$commit" origin/src/automation; then
                 AUTOMATION_LINES+="$line"$'\n'
@@ -269,7 +269,7 @@ jobs:
             echo "$UPSTREAM_LINE"
             echo "- Mozilla change notes: ${MOZ_FOCUS_NOTES_URL}"
             echo
-            echo "### New commits on src/patches"
+            echo "### New commits on src/patches/current"
             if [ -n "$PATCH_LINES" ]; then
               printf '%s' "$PATCH_LINES"
             else
@@ -285,7 +285,7 @@ jobs:
           } > .github/RELEASE_NOTES.generated.md
 
       - name: Publish GitHub Release
-        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dist/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
