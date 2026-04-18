@@ -1,4 +1,4 @@
-name: Propagate stack to main
+name: Propagate stack to dist/main
 
 on:
   workflow_dispatch:
@@ -25,17 +25,17 @@ jobs:
       - name: Fetch all branches
         run: git fetch origin
 
-      - name: Rebase src/automation onto src/patches
+      - name: Rebase src/automation onto src/patches/current
         run: |
-          git checkout -b src/automation origin/src/automation
-          git rebase origin/src/patches
+          git checkout -B src/automation origin/src/automation
+          git rebase origin/src/patches/current
 
-      - name: Reset main to src/automation
+      - name: Reset dist/main to src/automation
         run: |
-          git checkout -b main-local origin/main
+          git checkout -B dist-main-local origin/dist/main
           git reset --hard src/automation
 
       - name: Force-push
         run: |
           git push --force-with-lease origin src/automation:src/automation
-          git push --force-with-lease origin main-local:main
+          git push --force-with-lease origin dist-main-local:dist/main
