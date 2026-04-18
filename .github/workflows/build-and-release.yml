@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -202,6 +202,88 @@ jobs:
           path: "**/app-focus-arm64-v8a-debug.apk"
           if-no-files-found: error
 
+      - name: Fetch branch refs for release notes
+        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        run: |
+          git fetch origin \
+            refs/heads/upstream-mirror:refs/remotes/origin/upstream-mirror \
+            refs/heads/src/patches:refs/remotes/origin/src/patches \
+            refs/heads/src/automation:refs/remotes/origin/src/automation \
+            --tags
+
+      - name: Generate release notes
+        if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          FOCUS_VERSION=$(tr -d '[:space:]' < mobile/android/version.txt)
+          CURRENT_TAG="focus-${FOCUS_VERSION}-build.${GITHUB_RUN_NUMBER}"
+          MOZ_FOCUS_NOTES_URL="https://support.mozilla.org/en-US/kb/whats-new-firefox-focus-android"
+
+          PREV_TAG=$(gh release list --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName' \
+            | grep '^focus-' \
+            | grep -v "^${CURRENT_TAG}$" \
+            | head -1 || true)
+
+          PREV_VERSION=""
+          if [ -n "$PREV_TAG" ]; then
+            PREV_VERSION=$(echo "$PREV_TAG" | sed -E 's/^focus-([0-9.]+)-build\.[0-9]+$/\1/')
+          fi
+
+          RANGE=""
+          if [ -n "$PREV_TAG" ] && git rev-parse -q --verify "refs/tags/$PREV_TAG" >/dev/null; then
+            RANGE="$PREV_TAG..HEAD"
+          fi
+
+          PATCH_LINES=""
+          AUTOMATION_LINES=""
+
+          if [ -n "$RANGE" ]; then
+            while IFS= read -r commit; do
+              [ -z "$commit" ] && continue
+              if git merge-base --is-ancestor "$commit" origin/upstream-mirror; then
+                continue
+              fi
+              short=$(git show -s --format='%h' "$commit")
+              subject=$(git show -s --format='%s' "$commit")
+              line="- ${short} ${subject}"
+              if git merge-base --is-ancestor "$commit" origin/src/patches; then
+                PATCH_LINES+="$line"$'\n'
+              elif git merge-base --is-ancestor "$commit" origin/src/automation; then
+                AUTOMATION_LINES+="$line"$'\n'
+              fi
+            done < <(git rev-list --reverse "$RANGE")
+          fi
+
+          UPSTREAM_LINE="- Upstream Firefox Focus version in this build: ${FOCUS_VERSION}."
+          if [ -n "$PREV_VERSION" ] && [ "$PREV_VERSION" != "$FOCUS_VERSION" ]; then
+            UPSTREAM_LINE="- Upstream Firefox Focus updated: ${PREV_VERSION} → ${FOCUS_VERSION}."
+          fi
+
+          {
+            echo "## What's new"
+            echo
+            echo "### Upstream Firefox Focus"
+            echo "$UPSTREAM_LINE"
+            echo "- Mozilla change notes: ${MOZ_FOCUS_NOTES_URL}"
+            echo
+            echo "### New commits on src/patches"
+            if [ -n "$PATCH_LINES" ]; then
+              printf '%s' "$PATCH_LINES"
+            else
+              echo "- None since last release."
+            fi
+            echo
+            echo "### New commits on src/automation"
+            if [ -n "$AUTOMATION_LINES" ]; then
+              printf '%s' "$AUTOMATION_LINES"
+            else
+              echo "- None since last release."
+            fi
+          } > .github/RELEASE_NOTES.generated.md
+
       - name: Publish GitHub Release
         if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         env:
@@ -216,7 +298,7 @@ jobs:
           TAG="focus-${FOCUS_VERSION}-build.${GITHUB_RUN_NUMBER}"
           gh release delete "$TAG" --yes 2>/dev/null || true
           git push origin ":refs/tags/$TAG" 2>/dev/null || true
-          NOTES=$(cat .github/RELEASE_NOTES.md)
+          NOTES=$(cat .github/RELEASE_NOTES.generated.md)
           gh release create "$TAG" \
             --title "Firefox Focus ${FOCUS_VERSION} (build ${GITHUB_RUN_NUMBER})" \
             --notes "$NOTES" \
