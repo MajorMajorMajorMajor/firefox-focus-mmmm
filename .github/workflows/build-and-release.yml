@@ -216,7 +216,6 @@ jobs:
 
           FOCUS_VERSION=$(tr -d '[:space:]' < mobile/android/version.txt)
           CURRENT_TAG="focus-${FOCUS_VERSION}-build.${GITHUB_RUN_NUMBER}"
-          MOZ_FOCUS_NOTES_URL="https://support.mozilla.org/en-US/kb/whats-new-firefox-focus-android"
 
           PREV_TAG=$(gh release list --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName' \
             | grep '^focus-' \
@@ -228,15 +227,17 @@ jobs:
             PREV_VERSION=$(echo "$PREV_TAG" | sed -E 's/^focus-([0-9.]+)-build\.[0-9]+$/\1/')
           fi
 
-          RANGE=""
-          if [ -n "$PREV_TAG" ] && git rev-parse -q --verify "refs/tags/$PREV_TAG" >/dev/null; then
-            RANGE="$PREV_TAG..HEAD"
-          fi
-
           PATCH_LINES=""
           AUTOMATION_LINES=""
+          PATCH_BASE=""
+          AUTOMATION_BASE=""
 
-          if [ -n "$RANGE" ]; then
+          if [ -n "$PREV_TAG" ] && git rev-parse -q --verify "refs/tags/$PREV_TAG" >/dev/null; then
+            PATCH_BASE=$(git merge-base "$PREV_TAG" origin/src/patches/current || true)
+            AUTOMATION_BASE=$(git merge-base "$PREV_TAG" origin/src/automation || true)
+          fi
+
+          if [ -n "$PATCH_BASE" ]; then
             while IFS= read -r commit; do
               [ -z "$commit" ] && continue
               if git merge-base --is-ancestor "$commit" origin/src/upstream; then
@@ -244,39 +245,53 @@ jobs:
               fi
               short=$(git show -s --format='%h' "$commit")
               subject=$(git show -s --format='%s' "$commit")
-              line="- ${short} ${subject}"
-              if git merge-base --is-ancestor "$commit" origin/src/patches/current; then
-                PATCH_LINES+="$line"$'\n'
-              elif git merge-base --is-ancestor "$commit" origin/src/automation; then
-                AUTOMATION_LINES+="$line"$'\n'
-              fi
-            done < <(git rev-list --reverse "$RANGE")
+              PATCH_LINES+="- ${short} ${subject}"$'\n'
+            done < <(git rev-list --reverse "${PATCH_BASE}..origin/src/patches/current")
           fi
 
-          UPSTREAM_LINE="- Upstream Firefox Focus version in this build: ${FOCUS_VERSION}."
+          if [ -n "$AUTOMATION_BASE" ]; then
+            while IFS= read -r commit; do
+              [ -z "$commit" ] && continue
+              if git merge-base --is-ancestor "$commit" origin/src/upstream; then
+                continue
+              fi
+              if git merge-base --is-ancestor "$commit" origin/src/patches/current; then
+                continue
+              fi
+              short=$(git show -s --format='%h' "$commit")
+              subject=$(git show -s --format='%s' "$commit")
+              AUTOMATION_LINES+="- ${short} ${subject}"$'\n'
+            done < <(git rev-list --reverse "${AUTOMATION_BASE}..origin/src/automation")
+          fi
+
+          UPSTREAM_CHANGED=false
           if [ -n "$PREV_VERSION" ] && [ "$PREV_VERSION" != "$FOCUS_VERSION" ]; then
-            UPSTREAM_LINE="- Upstream Firefox Focus updated: ${PREV_VERSION} → ${FOCUS_VERSION}."
+            UPSTREAM_CHANGED=true
           fi
 
           {
             echo "## What's new"
             echo
-            echo "### Upstream Firefox Focus"
-            echo "$UPSTREAM_LINE"
-            echo "- Mozilla change notes: ${MOZ_FOCUS_NOTES_URL}"
-            echo
+            if [ "$UPSTREAM_CHANGED" = true ]; then
+              PREV_UPSTREAM_TAG="FIREFOX-ANDROID_$(echo "$PREV_VERSION" | tr '.' '_')_RELEASE"
+              CURRENT_UPSTREAM_TAG="FIREFOX-ANDROID_$(echo "$FOCUS_VERSION" | tr '.' '_')_RELEASE"
+              echo "### Upstream Firefox Focus"
+              echo "- Upstream Firefox Focus updated: ${PREV_VERSION} → ${FOCUS_VERSION}."
+              echo "- Upstream source compare: https://github.com/mozilla-firefox/firefox/compare/${PREV_UPSTREAM_TAG}...${CURRENT_UPSTREAM_TAG}"
+              echo
+            fi
+
             echo "### New commits on src/patches/current"
             if [ -n "$PATCH_LINES" ]; then
               printf '%s' "$PATCH_LINES"
             else
               echo "- None since last release."
             fi
-            echo
-            echo "### New commits on src/automation"
+
             if [ -n "$AUTOMATION_LINES" ]; then
+              echo
+              echo "### New commits on src/automation"
               printf '%s' "$AUTOMATION_LINES"
-            else
-              echo "- None since last release."
             fi
           } > .github/RELEASE_NOTES.generated.md
 
