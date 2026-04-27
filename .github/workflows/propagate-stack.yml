@@ -29,7 +29,22 @@ jobs:
       - name: Rebase src/automation onto src/patches/current
         run: |
           git checkout -B src/automation origin/src/automation
-          git rebase origin/src/patches/current
+          git rebase -X theirs origin/src/patches/current
+
+      - name: Remove non-fork GitHub workflows
+        run: |
+          set -euo pipefail
+          mkdir -p .github/workflows
+          find .github/workflows -maxdepth 1 -type f \
+            ! -name 'build-and-release.yml' \
+            ! -name 'propagate-stack.yml' \
+            ! -name 'sync-upstream.yml' \
+            -print -delete
+
+          git add -A .github/workflows
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: remove upstream workflow files"
+          fi
 
       - name: Reset dist/main to src/automation
         id: reset_dist
