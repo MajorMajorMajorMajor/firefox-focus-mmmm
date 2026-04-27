@@ -83,7 +83,19 @@ jobs:
           git rebase --onto "refs/tags/${{ steps.tag.outputs.tag }}" origin/src/upstream patches-current
 
           git checkout -B src-automation origin/src/automation
-          git rebase patches-current
+          git rebase -X theirs patches-current
+
+          mkdir -p .github/workflows
+          find .github/workflows -maxdepth 1 -type f \
+            ! -name 'build-and-release.yml' \
+            ! -name 'propagate-stack.yml' \
+            ! -name 'sync-upstream.yml' \
+            -print -delete
+
+          git add -A .github/workflows
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: remove upstream workflow files"
+          fi
 
           git checkout -B dist-main origin/dist/main
           git reset --hard src-automation
