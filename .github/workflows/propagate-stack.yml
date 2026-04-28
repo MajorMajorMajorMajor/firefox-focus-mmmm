@@ -38,7 +38,7 @@ jobs:
           while [ $REBASE_EXIT -ne 0 ] && { [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; }; do
             if git ls-files -u -- .github/workflows/pr-handler.yml | grep -q .; then
               git rm -f .github/workflows/pr-handler.yml || true
-              git add -A .github/workflows
+              git add -A .
               set +e
               git rebase --continue
               REBASE_EXIT=$?
