@@ -100,4 +100,4 @@ jobs:
         if: steps.reset_dist.outputs.dist_changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.WORKFLOW_PUSH_TOKEN }}
-        run: gh workflow run build-and-release.yml --ref dist/main
+        run: gh -R MajorMajorMajorMajor/firefox-focus-mmmm workflow run build-and-release.yml --ref dist/main
