@@ -11,12 +11,19 @@ jobs:
       actions: write
 
     steps:
+      - name: Require workflow push token
+        run: |
+          if [ -z "${{ secrets.WORKFLOW_PUSH_TOKEN }}" ]; then
+            echo "ERROR: WORKFLOW_PUSH_TOKEN is required (classic PAT with repo + workflow scopes)."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           filter: blob:none
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WORKFLOW_PUSH_TOKEN }}
 
       - name: Configure git
         run: |
@@ -92,5 +99,5 @@ jobs:
       - name: Dispatch build-and-release
         if: steps.reset_dist.outputs.dist_changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_PUSH_TOKEN }}
         run: gh workflow run build-and-release.yml --ref dist/main
