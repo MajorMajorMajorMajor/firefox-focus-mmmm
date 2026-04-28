@@ -83,7 +83,31 @@ jobs:
           git rebase --onto "refs/tags/${{ steps.tag.outputs.tag }}" origin/src/upstream patches-current
 
           git checkout -B src-automation origin/src/automation
+
+          set +e
           git rebase -X theirs patches-current
+          REBASE_EXIT=$?
+          set -e
+
+          while [ $REBASE_EXIT -ne 0 ] && { [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; }; do
+            if git ls-files -u -- .github/workflows/pr-handler.yml | grep -q .; then
+              git rm -f .github/workflows/pr-handler.yml || true
+              git add -A .github/workflows
+              set +e
+              git rebase --continue
+              REBASE_EXIT=$?
+              set -e
+            else
+              echo "Unhandled rebase conflict while rebasing src-automation"
+              git status --short
+              exit 1
+            fi
+          done
+
+          if [ $REBASE_EXIT -ne 0 ]; then
+            echo "Rebase failed"
+            exit $REBASE_EXIT
+          fi
 
           mkdir -p .github/workflows
           find .github/workflows -maxdepth 1 -type f \
