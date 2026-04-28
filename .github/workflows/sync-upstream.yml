@@ -94,7 +94,7 @@ jobs:
               git rm -f .github/workflows/pr-handler.yml || true
               git add -A .
               set +e
-              git rebase --continue
+              GIT_EDITOR=true git rebase --continue
               REBASE_EXIT=$?
               set -e
             else
