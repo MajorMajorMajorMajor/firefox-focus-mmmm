@@ -240,28 +240,19 @@ jobs:
           if [ -n "$PATCH_BASE" ]; then
             while IFS= read -r commit; do
               [ -z "$commit" ] && continue
-              if git merge-base --is-ancestor "$commit" origin/src/upstream; then
-                continue
-              fi
               short=$(git show -s --format='%h' "$commit")
               subject=$(git show -s --format='%s' "$commit")
               PATCH_LINES+="- ${short} ${subject}"$'\n'
-            done < <(git rev-list --reverse "${PATCH_BASE}..origin/src/patches/current")
+            done < <(git rev-list --reverse "${PATCH_BASE}..origin/src/patches/current" --not origin/src/upstream)
           fi
 
           if [ -n "$AUTOMATION_BASE" ]; then
             while IFS= read -r commit; do
               [ -z "$commit" ] && continue
-              if git merge-base --is-ancestor "$commit" origin/src/upstream; then
-                continue
-              fi
-              if git merge-base --is-ancestor "$commit" origin/src/patches/current; then
-                continue
-              fi
               short=$(git show -s --format='%h' "$commit")
               subject=$(git show -s --format='%s' "$commit")
               AUTOMATION_LINES+="- ${short} ${subject}"$'\n'
-            done < <(git rev-list --reverse "${AUTOMATION_BASE}..origin/src/automation")
+            done < <(git rev-list --reverse "${AUTOMATION_BASE}..origin/src/automation" --not origin/src/upstream origin/src/patches/current)
           fi
 
           UPSTREAM_CHANGED=false
