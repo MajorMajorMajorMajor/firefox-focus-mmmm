@@ -57,10 +57,12 @@ jobs:
           echo "JAVA_HOME=$EXPECTED" >> "$GITHUB_ENV"
           echo "Installed: $EXPECTED"
 
-      - name: Install Android emulator component
+      - name: Install required Android SDK components
         run: |
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
-          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "emulator"
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "cmdline-tools;20.0" \
+            "emulator"
 
       - name: Install bundletool
         run: |
