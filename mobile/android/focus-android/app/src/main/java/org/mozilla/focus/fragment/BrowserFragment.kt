@@ -658,15 +658,17 @@ class BrowserFragment :
             requireComponents.store,
             requireComponents.topSitesUseCases,
             tabId,
-            ::shareCurrentUrl,
-            ::toggleDesktopSite,
-            ::showAddToHomescreenDialog,
-            ::showFindInPageBar,
-            ::toggleReaderView,
-            ::showReaderViewAppearance,
-            ::openSelectBrowser,
-            ::openInBrowser,
-            ::showShortcutAddedSnackBar,
+            BrowserMenuCallbacks(
+                shareCallback = ::shareCurrentUrl,
+                requestDesktopCallback = ::toggleDesktopSite,
+                addToHomeScreenCallback = ::showAddToHomescreenDialog,
+                showFindInPageCallback = ::showFindInPageBar,
+                toggleReaderViewCallback = ::toggleReaderView,
+                showReaderViewAppearanceCallback = ::showReaderViewAppearance,
+                openInCallback = ::openSelectBrowser,
+                openInBrowser = ::openInBrowser,
+                showShortcutAddedSnackBar = ::showShortcutAddedSnackBar,
+            ),
         )
 
         val customTabSessionState = tab.ifCustomTab()

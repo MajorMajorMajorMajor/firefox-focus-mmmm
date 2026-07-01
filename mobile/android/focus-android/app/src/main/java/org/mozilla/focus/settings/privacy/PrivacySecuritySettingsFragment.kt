@@ -72,11 +72,11 @@ class PrivacySecuritySettingsFragment :
             findPreference(getString(R.string.pref_key_performance_enable_font_inflation)) as? SwitchPreference
         val cookieBannerPreference = findPreference<Preference>(getString(R.string.pref_key_cookie_banner_settings))
 
-        cookiesPreference?.onPreferenceChangeListener = preferencesListener
-        safeBrowsingSwitchPreference?.onPreferenceChangeListener = preferencesListener
-        javaScriptPreference?.onPreferenceChangeListener = preferencesListener
-        webFontsPreference?.onPreferenceChangeListener = preferencesListener
-        fontInflationPreference?.onPreferenceChangeListener = preferencesListener
+        cookiesPreference?.onPreferenceChangeListener = engineSharedPreferencesListener
+        safeBrowsingSwitchPreference?.onPreferenceChangeListener = engineSharedPreferencesListener
+        javaScriptPreference?.onPreferenceChangeListener = engineSharedPreferencesListener
+        webFontsPreference?.onPreferenceChangeListener = engineSharedPreferencesListener
+        fontInflationPreference?.onPreferenceChangeListener = engineSharedPreferencesListener
 
         cookieBannerPreference?.isVisible = requireContext().settings.isCookieBannerEnable
         if (requireContext().settings.getCurrentCookieBannerOptionFromSharePref() ==
