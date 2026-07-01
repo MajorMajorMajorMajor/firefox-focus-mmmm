@@ -57,6 +57,7 @@ internal const val DEFAULT_RELEASE_CHANNEL = "N/A"
 internal const val DEFAULT_DISTRIBUTION_ID = "N/A"
 
 private const val KEY_CRASH_ID = "CrashID"
+private const val CRASH_EVENT_ID_KEY = "CrashEventID"
 
 private const val MINI_DUMP_FILE_EXT = "dmp"
 private const val EXTRAS_FILE_EXT = "extra"
@@ -289,14 +290,14 @@ class MozillaSocorroService(
                 for (key in extrasMap.keys) {
                     formDataWriter.sendPart(key, extrasMap[key])
                 }
-                hasCrashEventId = extrasMap.containsKey(Annotation.CrashEventID.toString())
+                hasCrashEventId = extrasMap.containsKey(CRASH_EVENT_ID_KEY)
                 additionalDumps = formDataWriter.AdditionalMinidumps(extrasMap)
                 extrasFile.delete()
             }
         }
 
         if (!hasCrashEventId) {
-            formDataWriter.sendAnnotation(Annotation.CrashEventID, crashEventId)
+            formDataWriter.sendPart(CRASH_EVENT_ID_KEY, crashEventId)
         }
 
         if (throwable?.stackTrace?.isEmpty() == false) {
