@@ -4,6 +4,9 @@
 
 package org.mozilla.focus.topsites
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import mozilla.components.feature.top.sites.PinnedSiteStorage
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.feature.top.sites.TopSitesFrecencyConfig
@@ -20,6 +23,8 @@ import mozilla.components.support.base.observer.ObserverRegistry
 class DefaultTopSitesStorage(
     private val pinnedSitesStorage: PinnedSiteStorage,
 ) : TopSitesStorage, Observable<TopSitesStorage.Observer> by ObserverRegistry() {
+
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     override suspend fun addTopSite(title: String, url: String, isDefault: Boolean) {
         pinnedSitesStorage.addPinnedSite(title, url, isDefault)
