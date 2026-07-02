@@ -34,6 +34,7 @@ import mozilla.components.feature.media.middleware.RecordingDevicesMiddleware
 import mozilla.components.feature.prompts.PromptMiddleware
 import mozilla.components.feature.prompts.file.FileUploadsDirCleaner
 import mozilla.components.feature.prompts.file.FileUploadsDirCleanerMiddleware
+import mozilla.components.feature.readerview.ReaderViewMiddleware
 import mozilla.components.feature.search.SearchApplicationName
 import mozilla.components.feature.search.SearchDeviceType
 import mozilla.components.feature.search.SearchUpdateChannel
@@ -154,6 +155,7 @@ class Components(
             javascriptEnabled = !settings.shouldBlockJavaScript(),
             remoteDebuggingEnabled = settings.shouldEnableRemoteDebugging(),
             webFontsEnabled = !settings.shouldBlockWebFonts(),
+            fontInflationEnabled = settings.shouldEnableFontInflation(),
             httpsOnlyMode = settings.getHttpsOnlyMode(),
             preferredColorScheme = settings.getPreferredColorScheme(),
             cookieBannerHandlingModePrivateBrowsing = settings.getCurrentCookieBannerOptionFromSharePref().mode,
@@ -218,6 +220,7 @@ class Components(
                 ),
                 SearchFilterMiddleware(),
                 PromptMiddleware(),
+                ReaderViewMiddleware(),
                 AdsTelemetryMiddleware(adsTelemetry),
                 BlockedTrackersMiddleware(context),
                 RecordingDevicesMiddleware(context, notificationsDelegate),
