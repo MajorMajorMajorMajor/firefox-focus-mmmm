@@ -31,6 +31,7 @@ import java.io.IOException
 import java.security.MessageDigest
 
 private val logger = Logger("glean/GleanCrashReporterService")
+private const val CRASH_EVENT_ID_KEY = "CrashEventID"
 
 /**
  * A [CrashReporterService] implementation for recording metrics with Glean.  The purpose of this
@@ -247,7 +248,7 @@ class GleanCrashReporterService(
             appBuildId?.let { extras[Annotation.BuildID] = JsonPrimitive(it) }
             extras[Annotation.JavaException] = JsonPrimitive(crash.throwable.getStacktraceAsJsonString())
             extras[Annotation.CrashType] = JsonPrimitive("uncaught exception")
-            extras[Annotation.CrashEventID] = JsonPrimitive(crash.uuid)
+            extras[CRASH_EVENT_ID_KEY] = JsonPrimitive(crash.uuid)
 
             sendCrashPing(Json.encodeToString(extras))
         }
@@ -334,8 +335,9 @@ class GleanCrashReporterService(
             extras.setIfAbsent(Annotation.CrashType) {
                 JsonPrimitive("${if (!crash.isFatal) "non-" else ""}fatal native crash")
             }
-            // CrashEventID should only be absent if there is no extras file
-            extras.setIfAbsent(Annotation.CrashEventID) { JsonPrimitive(crash.uuid) }
+            if (!extras.containsKey(CRASH_EVENT_ID_KEY)) {
+                extras[CRASH_EVENT_ID_KEY] = JsonPrimitive(crash.uuid)
+            }
 
             sendCrashPing(Json.encodeToString(extras))
         }
