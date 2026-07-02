@@ -31,7 +31,16 @@ internal interface PinnedSiteDao {
         }
     }
 
-    @WorkerThread @Query("SELECT * FROM top_sites") fun getPinnedSites(): List<PinnedSiteEntity>
+    @WorkerThread @Query("SELECT * FROM top_sites ORDER BY id") fun getPinnedSites(): List<PinnedSiteEntity>
+
+    @WorkerThread @Query("DELETE FROM top_sites") fun deleteAllPinnedSites()
+
+    @WorkerThread
+    @Transaction
+    fun reorderPinnedSites(sites: List<PinnedSiteEntity>) {
+        deleteAllPinnedSites()
+        insertAllPinnedSites(sites.map { it.copy(id = null) })
+    }
 
     @Query("SELECT COUNT(*) FROM top_sites") fun getPinnedSitesCount(): Int
 }

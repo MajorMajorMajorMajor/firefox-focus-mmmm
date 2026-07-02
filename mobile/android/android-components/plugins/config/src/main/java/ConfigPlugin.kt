@@ -20,13 +20,10 @@ class ConfigPlugin : Plugin<Project> {
 object Config {
 
     @JvmStatic
-    private fun generateDebugVersionName(): String {
-        val today = Date()
-        // Append the year (2 digits) and week in year (2 digits). This will make it easier to distinguish versions and
-        // identify ancient versions when debugging issues. However this will still keep the same version number during
-        // the week so that we do not end up with a lot of versions in tools like Sentry. As an extra this matches the
-        // sections we use in the changelog (weeks).
-        return SimpleDateFormat("1.0.yyww", Locale.US).format(today)
+    fun generateDebugVersionName(project: Project? = null): String {
+        val base = SimpleDateFormat("1.0.yyww", Locale.US).format(Date())
+        val buildNumber = project?.findProperty("buildNumber")?.toString()
+        return if (buildNumber != null) "$base.$buildNumber" else base
     }
 
     @JvmStatic
