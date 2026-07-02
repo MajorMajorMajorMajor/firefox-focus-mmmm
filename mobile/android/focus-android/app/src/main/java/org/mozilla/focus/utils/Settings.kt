@@ -159,6 +159,12 @@ class Settings(
             false,
         )
 
+    fun shouldEnableFontInflation(): Boolean =
+        preferences.getBoolean(
+            getPreferenceKey(R.string.pref_key_performance_enable_font_inflation),
+            true,
+        )
+
     /**
      * Gets or sets the raw string value for the cookie blocking preference.
      * It is recommended to use a typed version of this where possible.
