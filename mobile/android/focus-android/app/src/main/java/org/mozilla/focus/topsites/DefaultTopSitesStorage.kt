@@ -4,6 +4,9 @@
 
 package org.mozilla.focus.topsites
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import mozilla.components.feature.top.sites.PinnedSiteStorage
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.feature.top.sites.TopSitesFrecencyConfig
@@ -19,6 +22,8 @@ import mozilla.components.support.base.observer.ObserverRegistry
  */
 class DefaultTopSitesStorage(private val pinnedSitesStorage: PinnedSiteStorage) :
     TopSitesStorage, Observable<TopSitesStorage.Observer> by ObserverRegistry() {
+
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     override suspend fun addTopSite(title: String, url: String, isDefault: Boolean) {
         pinnedSitesStorage.addPinnedSite(title, url, isDefault)
@@ -37,6 +42,14 @@ class DefaultTopSitesStorage(private val pinnedSitesStorage: PinnedSiteStorage) 
         notifyObservers { onStorageUpdated() }
     }
 
+    override fun reorderTopSites(topSites: List<TopSite>) {
+        scope.launch {
+            pinnedSitesStorage.reorderPinnedSites(topSites)
+
+            notifyObservers { onStorageUpdated() }
+        }
+    }
+
     override suspend fun getTopSites(
         totalSites: Int,
         frecencyConfig: TopSitesFrecencyConfig?,
@@ -44,6 +57,7 @@ class DefaultTopSitesStorage(private val pinnedSitesStorage: PinnedSiteStorage) 
     ): List<TopSite> = pinnedSitesStorage.getPinnedSites().take(totalSites)
 
     companion object {
-        const val TOP_SITES_MAX_LIMIT = 4
+        // Keep effectively unbounded so users can pin as many shortcuts as they want.
+        const val TOP_SITES_MAX_LIMIT = Int.MAX_VALUE
     }
 }
