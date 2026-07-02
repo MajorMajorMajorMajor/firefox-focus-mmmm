@@ -57,6 +57,9 @@ fun TopSitesOverlay(modifier: Modifier = Modifier) {
                     showRenameDialog.value = true
                     topSiteItem.value = topSite
                 },
+                onReorderTopSites = { reorderedSites ->
+                    components.topSitesUseCases.reorderTopSites(reorderedSites)
+                },
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
