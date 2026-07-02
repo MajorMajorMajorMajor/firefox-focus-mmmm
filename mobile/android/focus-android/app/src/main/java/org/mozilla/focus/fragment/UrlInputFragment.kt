@@ -30,6 +30,7 @@ import mozilla.components.support.ktx.util.URLStringUtils
 import mozilla.components.support.utils.StatusBarUtils
 import mozilla.components.support.utils.ThreadUtils
 import mozilla.telemetry.glean.private.NoExtras
+import org.mozilla.focus.BuildConfig
 import org.mozilla.focus.GleanMetrics.BrowserSearch
 import org.mozilla.focus.GleanMetrics.SearchBar
 import org.mozilla.focus.GleanMetrics.SearchWidget
@@ -300,6 +301,7 @@ class UrlInputFragment : BaseFragment(), View.OnClickListener {
             binding.menuView.isVisible = false
         }
 
+        binding.versionWatermark.text = "focus-${BuildConfig.VERSION_NAME}-build.${BuildConfig.VERSION_CODE}"
         binding.browserToolbar.editMode()
         setHomeMenu()
     }
