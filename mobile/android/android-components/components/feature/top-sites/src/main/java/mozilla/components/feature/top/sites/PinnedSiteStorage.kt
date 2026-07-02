@@ -88,6 +88,11 @@ class PinnedSiteStorage(
         pinnedSiteDao.updatePinnedSite(pinnedSite)
     }
 
+    /** Replaces all pinned sites with [sites] in the given order. */
+    suspend fun reorderPinnedSites(sites: List<TopSite>) {
+        pinnedSiteDao.reorderPinnedSites(sites.map { it.toPinnedSite() })
+    }
+
     /** Returns a count of pinned sites. */
     suspend fun getPinnedSitesCount(): Int = pinnedSiteDao.getPinnedSitesCount()
 }

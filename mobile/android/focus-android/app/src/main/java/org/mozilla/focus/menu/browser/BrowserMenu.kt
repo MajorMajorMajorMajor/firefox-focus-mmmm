@@ -68,6 +68,7 @@ class BrowserMenu(
                 isLoading = tab?.content?.loading == true,
                 isDesktopMode = tab?.content?.desktopMode == true,
                 isPdf = tab?.content?.isPdf == true,
+                isReaderViewActive = tab?.readerState?.active == true,
                 isShortcut = isShortcut,
                 canAddShortcut = !isShortcut && url != null && appState.topSites.size < TOP_SITES_MAX_LIMIT,
                 canAddToHomeScreen = tab != null && appState.isPinningSupported == true,
@@ -85,6 +86,7 @@ private data class MenuStatus(
     val isLoading: Boolean,
     val isDesktopMode: Boolean,
     val isPdf: Boolean,
+    val isReaderViewActive: Boolean,
     val isShortcut: Boolean,
     val canAddShortcut: Boolean,
     val canAddToHomeScreen: Boolean,
@@ -98,7 +100,14 @@ private fun MenuStatus.toMenuGroups(): List<MenuItemsGroup> =
             MenuItemsGroup.Row(id = SHORTCUTS_GROUP_ID, items = listOfNotNull(shortcutItem())),
             MenuItemsGroup.Row(
                 id = WEBPAGE_GROUP_ID,
-                items = listOfNotNull(findInPageItem(), desktopSiteItem(), reportSiteIssueItem()),
+                items =
+                    listOfNotNull(
+                        findInPageItem(),
+                        readerViewItem(),
+                        readerViewAppearanceItem(),
+                        desktopSiteItem(),
+                        reportSiteIssueItem(),
+                    ),
             ),
             MenuItemsGroup.Row(
                 id = MOVE_OUTSIDE_GROUP_ID,
@@ -172,6 +181,26 @@ private fun findInPageItem(): MenuItem =
         icon = iconsR.drawable.mozac_ic_search_24,
         item = ToolbarMenu.Item.FindInPage,
     )
+
+private fun MenuStatus.readerViewItem(): MenuItem =
+    menuItem(
+        title = if (isReaderViewActive) R.string.reader_view_disable else R.string.reader_view_enable,
+        icon =
+            if (isReaderViewActive) iconsR.drawable.mozac_ic_reader_view_fill_24 else iconsR.drawable.mozac_ic_reader_view_24,
+        item = ToolbarMenu.Item.ReaderView,
+        state = if (isReaderViewActive) MenuItemState.ACTIVE else MenuItemState.DEFAULT,
+    )
+
+private fun MenuStatus.readerViewAppearanceItem(): MenuItem? =
+    if (isReaderViewActive) {
+        menuItem(
+            title = R.string.reader_view_appearance,
+            icon = iconsR.drawable.mozac_ic_tool_24,
+            item = ToolbarMenu.Item.ReaderViewAppearance,
+        )
+    } else {
+        null
+    }
 
 private fun MenuStatus.desktopSiteItem(): MenuItem? {
     if (isPdf) return null

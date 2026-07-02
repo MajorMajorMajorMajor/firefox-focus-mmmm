@@ -29,7 +29,15 @@ internal interface PinnedSiteDao {
         }
     }
 
-    @Query("SELECT * FROM top_sites") suspend fun getPinnedSites(): List<PinnedSiteEntity>
+    @Query("SELECT * FROM top_sites ORDER BY id") suspend fun getPinnedSites(): List<PinnedSiteEntity>
+
+    @Query("DELETE FROM top_sites") suspend fun deleteAllPinnedSites()
+
+    @Transaction
+    suspend fun reorderPinnedSites(sites: List<PinnedSiteEntity>) {
+        deleteAllPinnedSites()
+        insertAllPinnedSites(sites.map { it.copy(id = null) })
+    }
 
     @Query("SELECT COUNT(*) FROM top_sites") suspend fun getPinnedSitesCount(): Int
 }

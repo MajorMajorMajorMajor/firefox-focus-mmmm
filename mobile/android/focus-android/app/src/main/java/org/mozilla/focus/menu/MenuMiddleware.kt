@@ -126,6 +126,8 @@ class MenuMiddleware(
             is ToolbarMenu.Item.ReportSiteIssue,
             ToolbarMenu.CustomTabItem.ReportSiteIssue ->
                 browserStore.state.webCompatReporterAction(currentTab)?.onClick()
+            is ToolbarMenu.Item.ReaderView -> callbacks.toggleReaderViewCallback()
+            is ToolbarMenu.Item.ReaderViewAppearance -> callbacks.showReaderViewAppearanceCallback()
             is ToolbarMenu.Item.AddToShortcuts -> {
                 addToShortcuts()
                 callbacks.showShortcutAddedSnackBar()
@@ -232,6 +234,9 @@ class MenuMiddleware(
                 BrowserMenu.browserMenuAction.record(BrowserMenu.BrowserMenuActionExtra(TelemetryActions.FIND_IN_PAGE))
 
             ToolbarMenu.Item.ReportSiteIssue -> Browser.reportSiteIssueCounter.add()
+
+            ToolbarMenu.Item.ReaderView -> {}
+            ToolbarMenu.Item.ReaderViewAppearance -> {}
 
             ToolbarMenu.Item.AddToShortcuts -> Shortcuts.shortcutAddedCounter.add()
 
