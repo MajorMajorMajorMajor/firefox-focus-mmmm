@@ -271,6 +271,7 @@ dependencies {
     implementation project(':components:feature-customtabs')
     implementation project(':components:feature-downloads')
     implementation project(':components:feature-findinpage')
+    implementation project(':components:feature-readerview')
     implementation project(':components:feature-intent')
     implementation project(':components:feature-media')
     implementation project(':components:feature-prompts')
