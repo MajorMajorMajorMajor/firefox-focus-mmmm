@@ -20,6 +20,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -31,12 +32,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.privateTabs
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.CustomTabConfig
 import mozilla.components.browser.state.state.CustomTabSessionState
 import mozilla.components.browser.state.state.ExternalAppType
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.browser.state.state.createTab
+import mozilla.components.browser.toolbar.BrowserToolbar
 import mozilla.components.concept.engine.HitResult
 import mozilla.components.feature.app.links.AppLinksFeature
 import mozilla.components.feature.contextmenu.ContextMenuFeature
@@ -46,6 +49,7 @@ import mozilla.components.feature.downloads.temporary.ShareResourceFeature
 import mozilla.components.feature.media.fullscreen.MediaSessionFullscreenFeature
 import mozilla.components.feature.prompts.PromptFeature
 import mozilla.components.feature.prompts.file.AndroidPhotoPicker
+import mozilla.components.feature.readerview.ReaderViewFeature
 import mozilla.components.feature.session.PictureInPictureFeature
 import mozilla.components.feature.session.SessionFeature
 import mozilla.components.feature.sitepermissions.SitePermissionsFeature
@@ -64,6 +68,7 @@ import mozilla.components.support.utils.Browsers
 import mozilla.components.support.utils.DefaultDownloadFileUtils
 import mozilla.components.support.utils.DownloadFileUtils
 import mozilla.components.support.utils.ext.requestInPlacePermissions
+import mozilla.components.ui.icons.R as iconsR
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.focus.Components
 import org.mozilla.focus.GleanMetrics.Browser
@@ -118,6 +123,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
         get() = _binding!!
 
     private val findInPageIntegration = ViewBoundFeatureWrapper<FindInPageIntegration>()
+    private val readerViewFeature = ViewBoundFeatureWrapper<ReaderViewFeature>()
     private val fullScreenIntegration = ViewBoundFeatureWrapper<FullScreenIntegration>()
     private var pictureInPictureFeature: PictureInPictureFeature? = null
 
@@ -217,6 +223,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
         val components = requireComponents
 
         initializeFindInPageFeature(view, components)
+        initializeReaderViewFeature(view, components)
         initializeFullScreenIntegrationFeature(view, components)
         initializePictureInPictureFeature(components)
         initializeContextMenuFeature(view, components)
@@ -241,6 +248,50 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
                 binding.browserToolbar,
                 binding.engineView,
             ),
+            this,
+            view,
+        )
+    }
+
+    private var readerViewAvailable = false
+    private var readerViewActive = false
+
+    private val readerViewPageAction by lazy {
+        BrowserToolbar.ToggleButton(
+            image =
+                AppCompatResources.getDrawable(
+                    requireContext(),
+                    iconsR.drawable.mozac_ic_reader_view_24,
+                )!!,
+            imageSelected =
+                AppCompatResources.getDrawable(
+                    requireContext(),
+                    iconsR.drawable.mozac_ic_reader_view_fill_24,
+                )!!,
+            contentDescription = getString(R.string.reader_view_enable),
+            contentDescriptionSelected = getString(R.string.reader_view_disable),
+            visible = { readerViewAvailable || readerViewActive },
+            selected = readerViewActive,
+        ) { _ ->
+            toggleReaderView()
+        }
+    }
+
+    private fun initializeReaderViewFeature(view: View, components: Components) {
+        binding.browserToolbar.addPageAction(readerViewPageAction)
+
+        readerViewFeature.set(
+            ReaderViewFeature(
+                requireContext(),
+                components.engine,
+                components.store,
+                binding.readerViewControls,
+            ) { available, active ->
+                readerViewAvailable = available
+                readerViewActive = active
+                readerViewPageAction.setSelected(active, notifyListener = false)
+                binding.browserToolbar.invalidateActions()
+            },
             this,
             view,
         )
@@ -588,6 +639,8 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
                     requestDesktopCallback = ::toggleDesktopSite,
                     addToHomeScreenCallback = ::showAddToHomescreenDialog,
                     showFindInPageCallback = ::showFindInPageBar,
+                    toggleReaderViewCallback = ::toggleReaderView,
+                    showReaderViewAppearanceCallback = ::showReaderViewAppearance,
                     openInCallback = ::openSelectBrowser,
                     openInBrowser = ::openInBrowser,
                     showShortcutAddedSnackBar = ::showShortcutAddedSnackBar,
@@ -874,7 +927,9 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
 
     @Suppress("ReturnCount")
     override fun onBackPressed(): Boolean {
-        if (findInPageIntegration.onBackPressed()) {
+        if (readerViewFeature.onBackPressed()) {
+            return true
+        } else if (findInPageIntegration.onBackPressed()) {
             return true
         } else if (fullScreenIntegration.onBackPressed()) {
             return true
@@ -991,6 +1046,21 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
 
     private fun showFindInPageBar() {
         findInPageIntegration.get()?.show(tab)
+    }
+
+    private fun toggleReaderView() {
+        readerViewFeature.withFeature { feature ->
+            val tab = requireComponents.store.state.selectedTab
+            if (tab?.readerState?.active == true) {
+                feature.hideReaderView()
+            } else {
+                feature.showReaderView()
+            }
+        }
+    }
+
+    private fun showReaderViewAppearance() {
+        readerViewFeature.withFeature { it.showControls() }
     }
 
     private fun openSelectBrowser() {

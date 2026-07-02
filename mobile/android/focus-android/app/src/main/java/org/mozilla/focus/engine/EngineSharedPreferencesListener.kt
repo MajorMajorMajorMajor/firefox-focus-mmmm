@@ -26,6 +26,9 @@ class EngineSharedPreferencesListener(private val context: Context) : Preference
 
             context.getString(R.string.pref_key_performance_block_webfonts) ->
                 updateWebFontsBlocking(newValue as Boolean)
+
+            context.getString(R.string.pref_key_performance_enable_font_inflation) ->
+                updateFontInflation(newValue as Boolean)
         }
 
         return true
@@ -73,6 +76,14 @@ class EngineSharedPreferencesListener(private val context: Context) : Preference
 
         components.engineDefaultSettings.webFontsEnabled = !newValue
         components.engine.settings.webFontsEnabled = !newValue
+        components.sessionUseCases.reload()
+    }
+
+    private fun updateFontInflation(newValue: Boolean) {
+        val components = context.components
+
+        components.engineDefaultSettings.fontInflationEnabled = newValue
+        components.engine.settings.fontInflationEnabled = newValue
         components.sessionUseCases.reload()
     }
 
