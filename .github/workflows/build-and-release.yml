@@ -82,21 +82,19 @@ jobs:
           )
           curl -fsSL -o "$HOME/.mozbuild/bundletool.jar" "$BUNDLETOOL_URL"
 
-      - name: Resolve geckoview-nightly version
-        # <latest> in Maven metadata tracks the nightly channel (currently 151.x).
-        # We need the newest build matching our tree's major.minor (e.g. 149.0).
+      - name: Resolve geckoview release version
         run: |
           LATEST=$(python3 - <<'PY'
           import re, urllib.request
           with open("mobile/android/version.txt") as f:
               ff_ver = f.read().strip()
           major_minor = ".".join(ff_ver.split(".")[:2])
-          url = "https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview-nightly-omni/maven-metadata.xml"
+          url = "https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview-omni/maven-metadata.xml"
           with urllib.request.urlopen(url) as r:
               content = r.read().decode()
           versions = re.findall(r'<version>(' + re.escape(major_minor) + r'\.[^<]+)</version>', content)
           if not versions:
-              raise SystemExit(f"No geckoview-nightly-omni versions found for {major_minor}")
+              raise SystemExit(f"No geckoview-omni versions found for {major_minor}")
           print(sorted(versions)[-1])
           PY
           )
@@ -111,7 +109,7 @@ jobs:
           ac_add_options --enable-project=mobile/android
           ac_add_options --target=aarch64-linux-android
           ac_add_options --with-branding=mobile/android/branding/nightly
-          ac_add_options --enable-update-channel=nightly
+          ac_add_options --enable-update-channel=release
           ac_add_options --disable-compile-environment
           ac_add_options --disable-tests
           ac_add_options --with-gradle
