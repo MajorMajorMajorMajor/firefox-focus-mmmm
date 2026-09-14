@@ -61,7 +61,7 @@ jobs:
         run: |
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
-            "cmdline-tools;20.0" \
+            "cmdline-tools;21.0" \
             "emulator"
 
       - name: Install bundletool
