@@ -286,12 +286,13 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
                 components.engine,
                 components.store,
                 binding.readerViewControls,
-            ) { available, active ->
-                readerViewAvailable = available
-                readerViewActive = active
-                readerViewPageAction.setSelected(active, notifyListener = false)
-                binding.browserToolbar.invalidateActions()
-            },
+                onReaderViewStatusChange = { available, active ->
+                    readerViewAvailable = available
+                    readerViewActive = active
+                    readerViewPageAction.setSelected(active, notifyListener = false)
+                    binding.browserToolbar.invalidateActions()
+                },
+            ),
             this,
             view,
         )
@@ -1060,7 +1061,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
     }
 
     private fun showReaderViewAppearance() {
-        readerViewFeature.withFeature { it.showControls() }
+        readerViewFeature.withFeature { it.showControls(isListenEnabled = false) }
     }
 
     private fun openSelectBrowser() {
