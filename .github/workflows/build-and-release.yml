@@ -43,7 +43,7 @@ jobs:
           )
           echo "Mach expects JDK: $JAVA_VER"
           MAJOR=$(echo "$JAVA_VER" | cut -d. -f1)
-          MINOR=$(echo "$JAVA_VER" | cut -d. -f2-3 | cut -d+ -f1)
+          MINOR=$(echo "$JAVA_VER" | cut -d. -f2- | cut -d+ -f1)
           PATCH=$(echo "$JAVA_VER" | cut -d+ -f2)
           URL="https://github.com/adoptium/temurin${MAJOR}-binaries/releases/download/jdk-${MAJOR}.${MINOR}%2B${PATCH}/OpenJDK${MAJOR}U-jdk_x64_linux_hotspot_${MAJOR}.${MINOR}_${PATCH}.tar.gz"
           echo "Downloading: $URL"
