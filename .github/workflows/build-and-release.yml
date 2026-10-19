@@ -59,9 +59,20 @@ jobs:
 
       - name: Install required Android SDK components
         run: |
+          CMDLINE_TOOLS_VERSION=$(python3 - <<'PY'
+          import re
+          with open("python/mozboot/mozboot/android.py") as f:
+              content = f.read()
+          match = re.search(r'^CMDLINE_TOOLS_VERSION_STRING\s*=\s*"(\d+(?:\.\d+)+)"', content, re.MULTILINE)
+          if not match:
+              raise SystemExit("Could not read CMDLINE_TOOLS_VERSION_STRING from mozboot")
+          print(match.group(1))
+          PY
+          )
+          echo "Mach expects Android cmdline-tools: $CMDLINE_TOOLS_VERSION"
           yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
-            "cmdline-tools;21.0" \
+            "cmdline-tools;$CMDLINE_TOOLS_VERSION" \
             "emulator"
 
       - name: Install bundletool
