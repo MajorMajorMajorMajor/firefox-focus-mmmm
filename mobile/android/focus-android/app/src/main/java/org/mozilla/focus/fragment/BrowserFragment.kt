@@ -1061,7 +1061,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
     }
 
     private fun showReaderViewAppearance() {
-        readerViewFeature.withFeature { it.showControls(isListenEnabled = false) }
+        readerViewFeature.withFeature { it.showControls() }
     }
 
     private fun openSelectBrowser() {
