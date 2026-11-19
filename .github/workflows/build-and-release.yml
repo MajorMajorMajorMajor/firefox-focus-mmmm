@@ -180,6 +180,19 @@ jobs:
           cd mobile/android/focus-android
           ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} -PversionName=$FOCUS_VERSION app:assembleFocusDebug
 
+      - name: Run Firefox 160 recovery regression tests
+        env:
+          MOZ_AUTOMATION: "1"
+        run: |
+          cd mobile/android/focus-android
+          ../../../gradlew --no-daemon \
+            app:testFocusDebugUnitTest \
+            --tests 'org.mozilla.focus.menu.MenuMiddlewareTest' \
+            --tests 'org.mozilla.focus.menu.browser.BrowserMenuTest' \
+            :components:feature-top-sites:testDebugUnitTest \
+            --tests 'mozilla.components.feature.top.sites.PinnedSitesStorageTest' \
+            --tests 'mozilla.components.feature.top.sites.db.PinnedSiteDaoTest'
+
       - name: Verify APK was signed with the persistent keystore
         if: success()
         run: |
