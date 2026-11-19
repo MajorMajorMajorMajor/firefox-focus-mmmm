@@ -98,7 +98,7 @@ fun TopSites(
         modifier =
             Modifier.semantics { testTagsAsResourceId = true }
                 .testTag(TOP_SITES_ROW_TEST_TAG)
-                .padding(horizontal = focusDimensions.paddingText),
+                .padding(horizontal = focusDimensions.paddingText)
     ) {
         val columns = (maxWidth.value / MIN_ITEM_WIDTH_DP).toInt().coerceAtLeast(2)
 

@@ -186,7 +186,8 @@ private fun MenuStatus.readerViewItem(): MenuItem =
     menuItem(
         title = if (isReaderViewActive) R.string.reader_view_disable else R.string.reader_view_enable,
         icon =
-            if (isReaderViewActive) iconsR.drawable.mozac_ic_reader_view_fill_24 else iconsR.drawable.mozac_ic_reader_view_24,
+            if (isReaderViewActive) iconsR.drawable.mozac_ic_reader_view_fill_24
+            else iconsR.drawable.mozac_ic_reader_view_24,
         item = ToolbarMenu.Item.ReaderView,
         state = if (isReaderViewActive) MenuItemState.ACTIVE else MenuItemState.DEFAULT,
     )

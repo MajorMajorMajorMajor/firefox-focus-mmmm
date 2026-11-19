@@ -39,7 +39,6 @@ import org.mozilla.focus.menu.ToolbarMenu.Item
 import org.mozilla.focus.state.AppState
 import org.mozilla.focus.state.AppStore
 import org.mozilla.focus.state.Screen
-import org.mozilla.focus.topsites.DefaultTopSitesStorage.Companion.TOP_SITES_MAX_LIMIT
 import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -127,24 +126,49 @@ class BrowserMenuTest {
     }
 
     @Test
-    fun `GIVEN shortcut capacity WHEN building the menu THEN offer add or remove as appropriate`() {
+    fun `GIVEN more than four shortcuts WHEN building the menu THEN allow adding or removing shortcuts`() {
         val shortcuts =
-            List(TOP_SITES_MAX_LIMIT) {
+            List(8) {
                 TopSite.Pinned(id = it.toLong(), title = "Shortcut", url = "https://example.org/$it", createdAt = 0)
             }
         val emptyItems = menu().currentMenuGroups().flatMap { it.items }
         assertTrue(emptyItems.hasItem(Item.AddToShortcuts))
         assertFalse(emptyItems.hasItem(Item.RemoveFromShortcuts))
 
-        val fullGroups = menu(appState = appState.copy(topSites = shortcuts)).currentMenuGroups()
-        assertFalse(fullGroups.flatMap { it.items }.hasItem(Item.AddToShortcuts))
-        assertFalse(fullGroups.flatMap { it.items }.hasItem(Item.RemoveFromShortcuts))
-        assertTrue(fullGroups.all { it.items.isNotEmpty() })
+        val groups = menu(appState = appState.copy(topSites = shortcuts)).currentMenuGroups()
+        assertTrue(groups.flatMap { it.items }.hasItem(Item.AddToShortcuts))
+        assertFalse(groups.flatMap { it.items }.hasItem(Item.RemoveFromShortcuts))
+        assertTrue(groups.all { it.items.isNotEmpty() })
 
         val pinned = shortcuts.toMutableList().apply { this[0] = shortcuts[0].copy(url = tab.content.url) }
         val pinnedItems = menu(appState = appState.copy(topSites = pinned)).currentMenuGroups().flatMap { it.items }
         assertFalse(pinnedItems.hasItem(Item.AddToShortcuts))
         assertTrue(pinnedItems.hasItem(Item.RemoveFromShortcuts))
+    }
+
+    @Test
+    fun `GIVEN reader state WHEN building the menu THEN update the toggle and appearance visibility`() {
+        for (active in listOf(false, true)) {
+            val state = browserState.copy(tabs = listOf(tab.copy(readerState = tab.readerState.copy(active = active))))
+            val items = menu(state).currentMenuGroups().flatMap { it.items }
+            val reader = items.item(Item.ReaderView)
+
+            assertEquals(
+                Text.Resource(if (active) R.string.reader_view_disable else R.string.reader_view_enable),
+                reader.title.text,
+            )
+            assertEquals(if (active) MenuItemState.ACTIVE else MenuItemState.DEFAULT, reader.state)
+            assertEquals(active, items.hasItem(Item.ReaderViewAppearance))
+        }
+    }
+
+    @Test
+    fun `GIVEN reader detection failed WHEN building the menu THEN still allow forcing reader view`() {
+        val state = browserState.copy(tabs = listOf(tab.copy(readerState = tab.readerState.copy(readerable = false))))
+        val items = menu(state).currentMenuGroups().flatMap { it.items }
+
+        assertEquals(MenuItemState.DEFAULT, items.item(Item.ReaderView).state)
+        assertFalse(items.hasItem(Item.ReaderViewAppearance))
     }
 
     @Test

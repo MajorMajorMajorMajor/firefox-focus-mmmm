@@ -157,6 +157,27 @@ class PinnedSitesStorageTest {
         verify(dao).updatePinnedSite(PinnedSiteEntity(1, "Mozilla (IT)", "https://www.mozilla.org/it", false, 1))
     }
 
+    @Test
+    fun reorderPinnedSites() = runTest {
+        val storage = PinnedSiteStorage(mock())
+        val dao = mockDao(storage)
+        val sites =
+            listOf(
+                TopSite.Default(2, "Firefox", "https://www.firefox.com", 20),
+                TopSite.Pinned(1, "Mozilla", "https://www.mozilla.org", 10),
+            )
+
+        storage.reorderPinnedSites(sites)
+
+        verify(dao)
+            .reorderPinnedSites(
+                listOf(
+                    PinnedSiteEntity(2, "Firefox", "https://www.firefox.com", true, 20),
+                    PinnedSiteEntity(1, "Mozilla", "https://www.mozilla.org", false, 10),
+                )
+            )
+    }
+
     private fun mockDao(storage: PinnedSiteStorage): PinnedSiteDao {
         val db = mock<TopSiteDatabase>()
         storage.database = lazy { db }
