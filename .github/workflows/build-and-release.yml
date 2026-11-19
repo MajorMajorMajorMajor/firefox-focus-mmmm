@@ -210,10 +210,24 @@ jobs:
           if-no-files-found: error
 
       - name: Run Firefox 160 recovery regression tests
+        env:
+          MOZ_AUTOMATION: "1"
+          MOZ_FETCHES_DIR: /tmp
         run: |
+          cat > "$RUNNER_TEMP/recovery-tests.gradle" <<'EOF'
+          gradle.projectsEvaluated {
+              gradle.rootProject.allprojects { project ->
+                  project.tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
+                      systemProperties.remove('robolectric.dependency.dir')
+                      systemProperty('robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2')
+                  }
+              }
+          }
+          EOF
           FOCUS_VERSION=$(tr -d '[:space:]' < mobile/android/version.txt)
           cd mobile/android/focus-android
-          ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} -PversionName=$FOCUS_VERSION \
+          ../../../gradlew --no-daemon --no-configuration-cache -I "$RUNNER_TEMP/recovery-tests.gradle" \
+            -PbuildNumber=${{ github.run_number }} -PversionName=$FOCUS_VERSION \
             app:testFocusDebugUnitTest \
             --tests 'org.mozilla.focus.menu.MenuMiddlewareTest' \
             --tests 'org.mozilla.focus.menu.browser.BrowserMenuTest' \
