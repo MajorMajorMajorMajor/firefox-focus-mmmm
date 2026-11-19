@@ -17,7 +17,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -180,19 +180,6 @@ jobs:
           cd mobile/android/focus-android
           ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} -PversionName=$FOCUS_VERSION app:assembleFocusDebug
 
-      - name: Run Firefox 160 recovery regression tests
-        env:
-          MOZ_AUTOMATION: "1"
-        run: |
-          cd mobile/android/focus-android
-          ../../../gradlew --no-daemon \
-            app:testFocusDebugUnitTest \
-            --tests 'org.mozilla.focus.menu.MenuMiddlewareTest' \
-            --tests 'org.mozilla.focus.menu.browser.BrowserMenuTest' \
-            :components:feature-top-sites:testDebugUnitTest \
-            --tests 'mozilla.components.feature.top.sites.PinnedSitesStorageTest' \
-            --tests 'mozilla.components.feature.top.sites.db.PinnedSiteDaoTest'
-
       - name: Verify APK was signed with the persistent keystore
         if: success()
         run: |
@@ -221,6 +208,26 @@ jobs:
           name: focus-debug-apk
           path: "**/app-focus-arm64-v8a-debug.apk"
           if-no-files-found: error
+
+      - name: Run Firefox 160 recovery regression tests
+        run: |
+          FOCUS_VERSION=$(tr -d '[:space:]' < mobile/android/version.txt)
+          cd mobile/android/focus-android
+          ../../../gradlew --no-daemon -PbuildNumber=${{ github.run_number }} -PversionName=$FOCUS_VERSION \
+            app:testFocusDebugUnitTest \
+            --tests 'org.mozilla.focus.menu.MenuMiddlewareTest' \
+            --tests 'org.mozilla.focus.menu.browser.BrowserMenuTest' \
+            :components:feature-top-sites:testDebugUnitTest \
+            --tests 'mozilla.components.feature.top.sites.PinnedSitesStorageTest' \
+            --tests 'mozilla.components.feature.top.sites.db.PinnedSiteDaoTest'
+
+      - name: Upload recovery test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: recovery-test-reports
+          path: "obj-*/gradle/build/**/test-results/**/*.xml"
+          if-no-files-found: warn
 
       - name: Fetch branch refs for release notes
         if: success() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/dist/main'
