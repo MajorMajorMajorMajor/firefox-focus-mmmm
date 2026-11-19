@@ -215,6 +215,12 @@ jobs:
           MOZ_FETCHES_DIR: /tmp
         run: |
           cat > "$RUNNER_TEMP/recovery-tests.gradle" <<'EOF'
+          gradle.settingsEvaluated { settings ->
+              def mozilla = settings.extensions.findByName('mozilla')
+              if (mozilla != null) {
+                  mozilla.disableAndroidComponentsTasks.set(false)
+              }
+          }
           gradle.projectsEvaluated {
               gradle.rootProject.allprojects { project ->
                   project.tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
@@ -234,6 +240,29 @@ jobs:
             :components:feature-top-sites:testDebugUnitTest \
             --tests 'mozilla.components.feature.top.sites.PinnedSitesStorageTest' \
             --tests 'mozilla.components.feature.top.sites.db.PinnedSiteDaoTest'
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          expected = {
+              "org.mozilla.focus.menu.MenuMiddlewareTest",
+              "org.mozilla.focus.menu.browser.BrowserMenuTest",
+              "mozilla.components.feature.top.sites.PinnedSitesStorageTest",
+              "mozilla.components.feature.top.sites.db.PinnedSiteDaoTest",
+          }
+          seen = set()
+          for path in Path(os.environ["GITHUB_WORKSPACE"]).glob("obj-*/gradle/build/**/test-results/**/*.xml"):
+              suite = ET.parse(path).getroot()
+              name = suite.get("name")
+              if name not in expected:
+                  continue
+              tests = int(suite.get("tests", "0"))
+              assert tests > 0, (name, "no tests executed")
+              assert all(int(suite.get(key, "0")) == 0 for key in ("failures", "errors", "skipped")), name
+              seen.add(name)
+              print(f"{name}: {tests} passed")
+          assert seen == expected, f"Missing test reports: {expected - seen}"
+          PY
 
       - name: Upload recovery test reports
         if: always()
